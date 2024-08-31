@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, ForeignKey, Text
+from sqlalchemy import JSON, ForeignKey, Text, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -24,7 +24,7 @@ class Posting(Base):
     __tablename__ = "postings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    word_pos: Mapped[int] = mapped_column(nullable=False)
+    count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     doc_id: Mapped[int] = mapped_column(ForeignKey("documents.id"))
     doc: Mapped["Doc"] = relationship(back_populates="postings")

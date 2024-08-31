@@ -2,10 +2,7 @@ from sagasu.files import read_file
 from sagasu.utils import normalize
 
 
-CONTENT = """
-Far out in the uncharted backwaters of the unfasionable end of the western
-spiral arm of the Galaxy lies a small, unregarded yellow sun.
-"""
+CONTENT = "Time is an illusion. Lunchtime doubly so."
 
 
 def test_read_text_file(tmp_path):

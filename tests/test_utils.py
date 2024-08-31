@@ -4,7 +4,10 @@ from sagasu.utils import normalize
 
 @pytest.fixture
 def short_text() -> str:
-    return """Time is an illusion. Lunchtime doubly so."""
+    return """
+    Far out in the uncharted backwaters of the unfasionable end of
+    the western spiral arm of the Galaxy lies a small, unregarded yellow sun.
+    """
 
 
 @pytest.fixture

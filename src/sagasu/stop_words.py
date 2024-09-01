@@ -1,4 +1,4 @@
-STOP_WORDS = [
+STOP_WORDS = {
     "a",
     "a's",
     "abbia",
@@ -1416,4 +1416,4 @@ STOP_WORDS = [
     "étées",
     "étés",
     "êtes",
-]
+}

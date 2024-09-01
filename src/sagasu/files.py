@@ -1,6 +1,6 @@
 from pathlib import Path
 import mimetypes
-from sagasu.utils import normalize
+from sagasu.utils import tokenize
 
 
 def list_files_in_dir(path: Path) -> list[Path]:
@@ -20,7 +20,7 @@ def read_file(file: Path) -> tuple[str, list[str]] | None:
         if mime_type == "text/plain":
             with file.open("r", encoding="utf-8") as f:
                 content = f.read()
-                return (content, normalize(content))
+                return (content, tokenize(content))
         else:
             print(f"Unsupported file format {mime_type}")
     except Exception as e:

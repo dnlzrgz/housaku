@@ -44,7 +44,7 @@ def test_get_document_by_id(docs_repository, new_doc):
 def test_get_document_by_attributes(docs_repository, new_doc):
     docs_repository.add(new_doc)
 
-    doc_in_db = docs_repository.get_by_attributes({"id": 1})
+    doc_in_db = docs_repository.get_by_attributes(uri=new_doc.uri)
     assert doc_in_db is not None
     assert doc_in_db.id == 1
     assert doc_in_db.content == new_doc.content

@@ -1,5 +1,5 @@
 import pytest
-from sagasu.utils import normalize
+from sagasu.utils import tokenize
 
 
 @pytest.fixture
@@ -44,23 +44,23 @@ def long_text(medium_text) -> str:
         ("\tThe\n\n\n", []),
     ],
 )
-def test_no_stop_words_after_normalization(input, expected):
-    assert normalize(input) == expected
+def test_no_stop_words_after_tokenization(input, expected):
+    assert tokenize(input) == expected
 
 
-@pytest.mark.normalize_small_text
-def test_normalize_small_text(short_text, benchmark):
-    result = benchmark(normalize, short_text)
+@pytest.mark.tokenize_small_text
+def test_tokenize_small_text(short_text, benchmark):
+    result = benchmark(tokenize, short_text)
     assert result
 
 
-@pytest.mark.normalize_medium_text
-def test_normalize_medium_text(medium_text, benchmark):
-    result = benchmark(normalize, medium_text)
+@pytest.mark.tokenize_medium_text
+def test_tokenize_medium_text(medium_text, benchmark):
+    result = benchmark(tokenize, medium_text)
     assert result
 
 
-@pytest.mark.normalize_long_text
-def test_normalize_long_text(long_text, benchmark):
-    result = benchmark(normalize, long_text)
+@pytest.mark.tokenize_long_text
+def test_tokenize_long_text(long_text, benchmark):
+    result = benchmark(tokenize, long_text)
     assert result

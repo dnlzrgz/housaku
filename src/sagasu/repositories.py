@@ -22,11 +22,14 @@ class Repository[T: (Doc, Posting, Word)]:
     def get(self, id: int) -> T | None:
         return self.session.get(self.model, id)
 
-    def get_by_attributes(self, dict) -> T | None:
-        return self.session.get(self.model, dict)
+    def get_by_attributes(self, **kwargs) -> T | None:
+        return self.session.query(self.model).filter_by(**kwargs).one_or_none()
 
     def get_all(self) -> list[T]:
         return self.session.query(self.model).all()
+
+    def get_all_by_attributes(self, **kwargs) -> list[T] | None:
+        return self.session.query(self.model).filter_by(**kwargs).all()
 
     def update(self, id: int, **kwargs) -> None:
         stmt = update(self.model).where(self.model.id == id).values(**kwargs)

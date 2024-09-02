@@ -45,6 +45,7 @@ class Word(Base):
     word: Mapped[str] = mapped_column(
         nullable=False,
         unique=True,
+        index=True,
     )
 
     postings: Mapped[list["Posting"]] = relationship(back_populates="word")

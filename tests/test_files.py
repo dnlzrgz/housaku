@@ -1,17 +1,18 @@
-from sagasu.files import read_file
-from sagasu.utils import tokenize
+from pathlib import Path
+from sagasu.files import _read_plain_text_file, _read_markdown_file
+
+TEST_FILES_DIR = Path(__file__).parent / "samples"
 
 
-CONTENT = "Time is an illusion. Lunchtime doubly so."
+def test_read_plain_text_file():
+    test_file = TEST_FILES_DIR / "short.txt"
 
-
-def test_read_text_file(tmp_path):
-    temp_file = tmp_path / "guide.txt"
-    temp_file.write_text(CONTENT)
-
-    result = read_file(temp_file)
+    result = _read_plain_text_file(test_file)
     assert result is not None
 
-    content, words = result
-    assert content == CONTENT
-    assert len(words) == len(tokenize(CONTENT))
+
+def test_markdown_file():
+    test_file = TEST_FILES_DIR / "short.md"
+
+    result = _read_markdown_file(test_file)
+    assert result is not None

@@ -6,5 +6,7 @@ translation_table = str.maketrans(string.punctuation, " " * len(string.punctuati
 
 def tokenize(text: str) -> list[str]:
     tokens = text.lower().translate(translation_table).split()
-    tokens = [token for token in tokens if token not in STOP_WORDS]
+    tokens = [
+        token for token in tokens if token not in STOP_WORDS and not token[0].isdigit()
+    ]
     return tokens

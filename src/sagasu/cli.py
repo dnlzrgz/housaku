@@ -10,6 +10,7 @@ from sagasu.db import init_db
 from sagasu.files import list_files_in_dir, read_file
 from sagasu.models import Doc, Posting, Word
 from sagasu.repositories import DocRepository, PostingRepository, WordRepository
+from sagasu.services import SearchService
 from sagasu.settings import Settings
 from sagasu.utils import tokenize
 
@@ -126,30 +127,11 @@ def search(ctx, count: int, query: str) -> None:
 
     tokens = tokenize(query)
 
-    results = set()
     with Session(engine) as session:
-        doc_repo = DocRepository(session)
-        posting_repo = PostingRepository(session)
-        word_repo = WordRepository(session)
+        search_service = SearchService(session)
+        results = search_service.search(tokens)
+        if not results:
+            return
 
-        for token in tokens:
-            word_in_db = word_repo.get_by_attributes(word=token)
-            if not word_in_db:
-                console.print(f"Word {token} not found.")
-                continue
-
-            postings_in_db = posting_repo.get_all_by_attributes(word_id=word_in_db.id)
-            if not postings_in_db:
-                console.print(f"Postings for word {token} not found.")
-                continue
-
-            for posting in postings_in_db:
-                doc_in_db = doc_repo.get(posting.doc_id)
-                if not doc_in_db:
-                    console.print(f"Document related to word {token} not found.")
-                    continue
-
-                results.add(doc_in_db)
-
-    for result in results:
-        console.print(result.uri)
+        for result in results:
+            print(result)

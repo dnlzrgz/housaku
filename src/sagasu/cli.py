@@ -11,6 +11,7 @@ from sagasu.files import list_files_in_dir, read_file
 from sagasu.models import Doc, Posting, Word
 from sagasu.repositories import DocRepository, PostingRepository, WordRepository
 from sagasu.settings import Settings
+from sagasu.utils import tokenize
 
 console = Console()
 
@@ -21,6 +22,7 @@ def cli(ctx) -> None:
     """
     A personal search engine.
     """
+
     ctx.ensure_object(dict)
 
     # Load settings
@@ -113,3 +115,41 @@ def index(ctx) -> None:
 
     with Session(engine) as session:
         asyncio.run(_index_files(session, files))
+
+
+@cli.command(name="search", help="")
+@click.option("--count", default=10, help="Number of results.")
+@click.option("--query", prompt="Search query", help="")
+@click.pass_context
+def search(ctx, count: int, query: str) -> None:
+    engine = ctx.obj["engine"]
+
+    tokens = tokenize(query)
+
+    results = set()
+    with Session(engine) as session:
+        doc_repo = DocRepository(session)
+        posting_repo = PostingRepository(session)
+        word_repo = WordRepository(session)
+
+        for token in tokens:
+            word_in_db = word_repo.get_by_attributes(word=token)
+            if not word_in_db:
+                console.print(f"Word {token} not found.")
+                continue
+
+            postings_in_db = posting_repo.get_all_by_attributes(word_id=word_in_db.id)
+            if not postings_in_db:
+                console.print(f"Postings for word {token} not found.")
+                continue
+
+            for posting in postings_in_db:
+                doc_in_db = doc_repo.get(posting.doc_id)
+                if not doc_in_db:
+                    console.print(f"Document related to word {token} not found.")
+                    continue
+
+                results.add(doc_in_db)
+
+    for result in results:
+        console.print(result.uri)

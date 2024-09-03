@@ -26,10 +26,10 @@ class Posting(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
-    doc_id: Mapped[int] = mapped_column(ForeignKey("documents.id"))
+    doc_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), index=True)
     doc: Mapped["Doc"] = relationship(back_populates="postings")
 
-    word_id: Mapped[int] = mapped_column(ForeignKey("words.id"))
+    word_id: Mapped[int] = mapped_column(ForeignKey("words.id"), index=True)
     word: Mapped["Word"] = relationship(back_populates="postings")
 
     def __repr__(self) -> str:

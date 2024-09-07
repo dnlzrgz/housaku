@@ -1,16 +1,33 @@
 from pathlib import Path
 import mimetypes
+import fnmatch
 from aiofile import async_open
 from pypdf import PdfReader
 import frontmatter
 from sagasu.utils import tokenize
 
 
-def list_files(path: Path) -> list[Path]:
-    if not path.is_dir():
-        raise Exception(f"Error: path {path} is not a directoy")
+def list_files(root: Path, exclude: list[str] = []) -> set[Path]:
+    if not root.is_dir():
+        raise Exception(f"path '{root}' is not a directory")
 
-    return [file.resolve() for file in path.rglob("*") if file.is_file()]
+    exclude_set = set(exclude)
+    file_list = set()
+
+    pending_dirs = [root]
+    while pending_dirs:
+        dir = pending_dirs.pop()
+        for path in dir.iterdir():
+            if any(fnmatch.fnmatch(path.name, pattern) for pattern in exclude_set):
+                continue
+
+            if path.is_dir():
+                pending_dirs.append(path)
+
+            if path.is_file():
+                file_list.add(path.resolve())
+
+    return file_list
 
 
 async def extract_tokens(file: Path) -> list[str]:

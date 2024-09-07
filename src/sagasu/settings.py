@@ -1,7 +1,7 @@
 from typing import Type, Tuple
 from pathlib import Path
 import click
-from pydantic import DirectoryPath
+from pydantic import BaseModel, DirectoryPath
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -12,11 +12,21 @@ from pydantic_settings import (
 _app_dir = Path(click.get_app_dir(app_name="sagasu"))
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(toml_file=f"{_app_dir / 'config.toml'}")
+class Files(BaseModel):
+    include: list[DirectoryPath] = []
+    exclude: list[str] = []
 
+
+class Feeds(BaseModel):
+    urls: list[str] = []
+
+
+class Settings(BaseSettings):
     sqlite_url: str = f"sqlite:///{_app_dir / 'db.sqlite3'}"
-    directories: dict[str, DirectoryPath] = {}
+    files: Files = Files()
+    feeds: Feeds = Feeds()
+
+    model_config = SettingsConfigDict(toml_file=f"{_app_dir / 'config.toml'}")
 
     @classmethod
     def settings_customise_sources(

@@ -39,7 +39,9 @@ def cli(ctx) -> None:
         ctx.forward(search)
 
 
-async def _index_files(session: Session, directories: list[Path]) -> None:
+async def _index_files(
+    session: Session, include: list[Path], exclude: list[str]
+) -> None:
     doc_repo = DocRepository(session)
     posting_repo = PostingRepository(session)
     word_repo = WordRepository(session)
@@ -48,13 +50,13 @@ async def _index_files(session: Session, directories: list[Path]) -> None:
 
     async def process_file(file: Path):
         async with sempahore:
-            uri = f"{file.resolve()}"
+            uri = f"{file}"
             try:
                 result = await extract_tokens(file)
                 doc_in_db = doc_repo.get_by_attributes(uri=uri)
                 if doc_in_db:
                     console.print(
-                        f"[bold yellow]Skip:[/] skipping already indexed file: '{file}'"
+                        f"[bold yellow]SKIP:[/] skipping already indexed file: '{uri}'"
                     )
                     return
 
@@ -90,9 +92,9 @@ async def _index_files(session: Session, directories: list[Path]) -> None:
     with console.status(
         "Indexing documents... This may take a moment", spinner="earth"
     ):
-        for directory in directories:
+        for dir in include:
             try:
-                files = list_files(directory)
+                files = list_files(dir, exclude)
             except Exception as exc:
                 console.print(f"[bold red]ERROR:[/] {exc}")
                 continue
@@ -112,9 +114,7 @@ def index(ctx) -> None:
 
     with Session(engine) as session:
         asyncio.run(
-            _index_files(
-                session, [settings.directories[dir] for dir in settings.directories]
-            )
+            _index_files(session, settings.files.include, settings.files.exclude)
         )
 
 
@@ -123,17 +123,16 @@ def index(ctx) -> None:
     help="Search for documents.",
 )
 @click.option(
+    "--query",
+    prompt="Search query",
+)
+@click.option(
     "--count",
     default=10,
     help="Maximum number of results.",
 )
-@click.option(
-    "--query",
-    prompt="Search query",
-    help="Query string.",
-)
 @click.pass_context
-def search(ctx, count: int, query: str) -> None:
+def search(ctx, query: str, count: int) -> None:
     engine = ctx.obj["engine"]
 
     tokens = tokenize(query)

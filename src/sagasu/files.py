@@ -1,19 +1,20 @@
 from pathlib import Path
-import mimetypes
+from typing import Any, Generator
 import fnmatch
+import mimetypes
 from aiofile import async_open
+from ebooklib import epub
 from pypdf import PdfReader
+import ebooklib
 import frontmatter
 from sagasu.utils import tokenize
 
 
-def list_files(root: Path, exclude: list[str] = []) -> set[Path]:
+def list_files(root: Path, exclude: list[str] = []) -> Generator[Path, Any, Any]:
     if not root.is_dir():
         raise Exception(f"path '{root}' is not a directory")
 
     exclude_set = set(exclude)
-    file_list = set()
-
     pending_dirs = [root]
     while pending_dirs:
         dir = pending_dirs.pop()
@@ -25,9 +26,7 @@ def list_files(root: Path, exclude: list[str] = []) -> set[Path]:
                 pending_dirs.append(path)
 
             if path.is_file():
-                file_list.add(path.resolve())
-
-    return file_list
+                yield path.resolve()
 
 
 async def extract_tokens(file: Path) -> list[str]:
@@ -39,6 +38,8 @@ async def extract_tokens(file: Path) -> list[str]:
         return await read_md(file)
     if mime_type == "application/pdf":
         return await read_pdf(file)
+    if mime_type == "application/epub+zip":
+        return await read_epub(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")
 
@@ -62,5 +63,15 @@ async def read_pdf(file: Path) -> list[str]:
     reader = PdfReader(file.resolve())
     for page in reader.pages:
         tokens.extend(tokenize(page.extract_text()))
+
+    return tokens
+
+
+async def read_epub(file: Path) -> list[str]:
+    tokens = []
+    book = epub.read_epub(file, {"ignore_ncx": True})
+    for page in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
+        content = page.get_body_content().decode()
+        tokens.extend(tokenize(content))
 
     return tokens

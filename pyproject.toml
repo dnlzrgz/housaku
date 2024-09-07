@@ -14,6 +14,7 @@ dependencies = [
   "click>=8.1.7",
   "aiofile>=3.8.8",
   "pypdf>=4.3.1",
+  "ebooklib>=0.18",
 ]
 
 [project.scripts]

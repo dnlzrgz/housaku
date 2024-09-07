@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from collections import Counter
 import click
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import Session
 from rich.console import Console
 from sagasu.db import init_db
@@ -20,7 +20,7 @@ console = Console()
 @click.pass_context
 def cli(ctx) -> None:
     """
-    A personal search engine.
+    A minimalistic personal search engine.
     """
 
     ctx.ensure_object(dict)
@@ -35,9 +35,8 @@ def cli(ctx) -> None:
 
     ctx.obj["engine"] = engine
 
-    # If no subcommand, exit
     if ctx.invoked_subcommand is None:
-        print(ctx.obj["settings"])
+        ctx.forward(search)
 
 
 async def _index_files(session: Session, directories: list[Path]) -> None:
@@ -54,6 +53,9 @@ async def _index_files(session: Session, directories: list[Path]) -> None:
                 result = await extract_tokens(file)
                 doc_in_db = doc_repo.get_by_attributes(uri=uri)
                 if doc_in_db:
+                    console.print(
+                        f"[bold yellow]Skip:[/] skipping already indexed file: '{file}'"
+                    )
                     return
 
                 doc_in_db = doc_repo.add(Doc(uri=uri))
@@ -78,9 +80,12 @@ async def _index_files(session: Session, directories: list[Path]) -> None:
                             )
                         )
 
+                console.print(f"[bold green]SUCCESS:[/] successfully indexed '{file}'.")
                 session.commit()
-            except Exception as exc:
-                console.print(f"[bold red]ERROR:[/] While reading {file}: {exc}")
+            except Exception as e:
+                console.print(
+                    f"[bold red]ERROR:[/] something went wrong while reading '{file}': {e}"
+                )
 
     with console.status(
         "Indexing documents... This may take a moment", spinner="earth"
@@ -96,7 +101,10 @@ async def _index_files(session: Session, directories: list[Path]) -> None:
             await asyncio.gather(*tasks)
 
 
-@cli.command(name="index", help="")
+@cli.command(
+    name="index",
+    help="Index document for the specified directories.",
+)
 @click.pass_context
 def index(ctx) -> None:
     engine = ctx.obj["engine"]
@@ -110,9 +118,20 @@ def index(ctx) -> None:
         )
 
 
-@cli.command(name="search", help="")
-@click.option("--count", default=10, help="Number of results.")
-@click.option("--query", prompt="Search query", help="")
+@cli.command(
+    name="search",
+    help="Search for documents.",
+)
+@click.option(
+    "--count",
+    default=10,
+    help="Maximum number of results.",
+)
+@click.option(
+    "--query",
+    prompt="Search query",
+    help="Query string.",
+)
 @click.pass_context
 def search(ctx, count: int, query: str) -> None:
     engine = ctx.obj["engine"]
@@ -123,7 +142,27 @@ def search(ctx, count: int, query: str) -> None:
         search_service = SearchService(session)
         results = search_service.search(tokens)
         if not results:
+            console.print("[yellow]No results found.[/]")
             return
 
+        console.print(f"[green]Found {len(results)} results:[/]")
         for result in results:
-            print(result)
+            console.print(f"'{result}'")
+
+
+@cli.command(
+    name="vacuum",
+    help="Reclaim unused spaced in the database.",
+)
+@click.pass_context
+def vacuum(ctx) -> None:
+    engine = ctx.obj["engine"]
+    with Session(engine) as session:
+        try:
+            session.execute(text("VACUUM"))
+            session.commit()
+            console.print("[bold green]SUCCESS:[/] unused space has been reclaimed!")
+        except exc.SQLAlchemyError as e:
+            console.print(
+                f"[bold red]ERROR:[/] something went wrong while reclaiming space: {e}"
+            )

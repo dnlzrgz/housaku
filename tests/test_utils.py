@@ -48,19 +48,16 @@ def test_no_stop_words_after_tokenization(input, expected):
     assert tokenize(input) == expected
 
 
-@pytest.mark.tokenize_small_text
-def test_tokenize_small_text(short_text, benchmark):
+def test_bench_tokenize_small_text(short_text, benchmark):
     result = benchmark(tokenize, short_text)
     assert result
 
 
-@pytest.mark.tokenize_medium_text
-def test_tokenize_medium_text(medium_text, benchmark):
+def test_bench_tokenize_medium_text(medium_text, benchmark):
     result = benchmark(tokenize, medium_text)
     assert result
 
 
-@pytest.mark.tokenize_long_text
-def test_tokenize_long_text(long_text, benchmark):
+def test_bench_tokenize_long_text(long_text, benchmark):
     result = benchmark(tokenize, long_text)
     assert result

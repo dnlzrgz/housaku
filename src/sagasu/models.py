@@ -11,7 +11,7 @@ class Doc(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     uri: Mapped[str] = mapped_column(nullable=False, unique=True)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=True)
     properties: Mapped[dict] = mapped_column(JSON, nullable=True)
 
     postings: Mapped[list["Posting"]] = relationship(back_populates="doc")

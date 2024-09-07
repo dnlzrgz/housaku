@@ -1,13 +1,12 @@
 import asyncio
 from pathlib import Path
-from itertools import batched
 from collections import Counter
 import click
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from rich.console import Console
 from sagasu.db import init_db
-from sagasu.files import list_files_in_dir, read_file
+from sagasu.files import list_files, extract_tokens
 from sagasu.models import Doc, Posting, Word
 from sagasu.repositories import DocRepository, PostingRepository, WordRepository
 from sagasu.services import SearchService
@@ -41,64 +40,59 @@ def cli(ctx) -> None:
         print(ctx.obj["settings"])
 
 
-async def _index_file(session: Session, file: Path) -> None:
+async def _index_files(session: Session, directories: list[Path]) -> None:
     doc_repo = DocRepository(session)
     posting_repo = PostingRepository(session)
     word_repo = WordRepository(session)
 
-    result = await read_file(file)
-    if not result:
-        print(f"Error while reading file: {file}")
-        return
+    sempahore = asyncio.Semaphore(10)
 
-    uri = file.resolve()
-    uri_str = f"{uri}"
-    doc_in_db = doc_repo.get_by_attributes(uri=uri_str)
-    if doc_in_db:
-        return
+    async def process_file(file: Path):
+        async with sempahore:
+            uri = f"{file.resolve()}"
+            try:
+                result = await extract_tokens(file)
+                doc_in_db = doc_repo.get_by_attributes(uri=uri)
+                if doc_in_db:
+                    return
 
-    content, tokens, metadata = result
-    doc_in_db = doc_repo.add(
-        Doc(
-            uri=uri_str,
-            content=content,
-            properties=metadata,
-        )
-    )
+                doc_in_db = doc_repo.add(Doc(uri=uri))
 
-    tokens = Counter(tokens)
-    for token, count in tokens.items():
-        word_in_db = word_repo.get_by_attributes(word=token)
-        if not word_in_db:
-            word_in_db = word_repo.add(Word(word=token))
+                tokens = Counter(result)
+                for token, count in tokens.items():
+                    word_in_db = word_repo.get_by_attributes(word=token)
+                    if not word_in_db:
+                        word_in_db = word_repo.add(Word(word=token))
 
-        posting_in_db = posting_repo.get_by_attributes(
-            word_id=word_in_db.id,
-            doc_id=doc_in_db.id,
-        )
-        if not posting_in_db:
-            posting_in_db = posting_repo.add(
-                Posting(
-                    word=word_in_db,
-                    doc=doc_in_db,
-                    count=count,
-                )
-            )
+                    posting_in_db = posting_repo.get_by_attributes(
+                        word_id=word_in_db.id,
+                        doc_id=doc_in_db.id,
+                    )
 
-    session.commit()
+                    if not posting_in_db:
+                        posting_in_db = posting_repo.add(
+                            Posting(
+                                word=word_in_db,
+                                doc=doc_in_db,
+                                count=count,
+                            )
+                        )
 
-
-async def _index_files(session: Session, files: list[Path]) -> None:
-    number_of_tasks = 20
+                session.commit()
+            except Exception as exc:
+                console.print(f"[bold red]ERROR:[/] While reading {file}: {exc}")
 
     with console.status(
         "Indexing documents... This may take a moment", spinner="earth"
     ):
-        for batch in batched(files, number_of_tasks):
-            tasks = []
-            for file in batch:
-                tasks.append(asyncio.ensure_future(_index_file(session, file)))
+        for directory in directories:
+            try:
+                files = list_files(directory)
+            except Exception as exc:
+                console.print(f"[bold red]ERROR:[/] {exc}")
+                continue
 
+            tasks = [process_file(file) for file in files]
             await asyncio.gather(*tasks)
 
 
@@ -108,14 +102,12 @@ def index(ctx) -> None:
     engine = ctx.obj["engine"]
     settings = ctx.obj["settings"]
 
-    files = []
-    for dir in settings.directories:
-        files_in_dir = list_files_in_dir(settings.directories[dir])
-        if files_in_dir:
-            files.extend(files_in_dir)
-
     with Session(engine) as session:
-        asyncio.run(_index_files(session, files))
+        asyncio.run(
+            _index_files(
+                session, [settings.directories[dir] for dir in settings.directories]
+            )
+        )
 
 
 @cli.command(name="search", help="")

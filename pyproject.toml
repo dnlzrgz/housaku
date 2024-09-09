@@ -11,10 +11,13 @@ dependencies = [
   "aiohttp[speedups]>=3.10.5",
   "python-frontmatter>=1.1.0",
   "pydantic-settings>=2.4.0",
-  "click>=8.1.7",
   "aiofile>=3.8.8",
   "pypdf>=4.3.1",
   "ebooklib>=0.18",
+  "click>=8.1.7",
+  "feedparser>=6.0.11",
+  "selectolax>=0.3.21",
+  "fastapi[standard]>=0.114.0",
 ]
 
 [project.scripts]

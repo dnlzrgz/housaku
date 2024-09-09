@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, ForeignKey, Text, Integer
+from sqlalchemy import JSON, Float, ForeignKey, Text, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,6 +25,7 @@ class Posting(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    tf: Mapped[float] = mapped_column(Float, default=0, nullable=False)
 
     doc_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), index=True)
     doc: Mapped["Doc"] = relationship(back_populates="postings")
@@ -33,9 +34,7 @@ class Posting(Base):
     word: Mapped["Word"] = relationship(back_populates="postings")
 
     def __repr__(self) -> str:
-        return (
-            f"Posting(id={self.id!r}, doc_id={self.doc_id!r}, word_id={self.word_id!r})"
-        )
+        return f"Posting(id={self.id!r}, doc_id={self.doc_id!r}, word_id={self.word_id!r}, count={self.count!r}, tf={self.tf!r})"
 
 
 class Word(Base):
@@ -51,4 +50,6 @@ class Word(Base):
     postings: Mapped[list["Posting"]] = relationship(back_populates="word")
 
     def __repr__(self) -> str:
-        return f"Word(id={self.id!r}, word={self.word!r})"
+        return (
+            f"Word(id={self.id!r}, word={self.word!r}, postings={len(self.postings)!r})"
+        )

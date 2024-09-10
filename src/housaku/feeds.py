@@ -1,8 +1,7 @@
 from typing import Any
 import aiohttp
 import feedparser
-
-from sagasu.utils import clean_html
+from housaku.utils import clean_html
 
 
 async def fetch_feed(client: aiohttp.ClientSession, feed_url: str) -> list[Any]:

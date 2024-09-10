@@ -11,7 +11,7 @@ from pypdf import PdfReader
 from docx import Document
 import ebooklib
 import frontmatter
-from sagasu.utils import tokenize
+from housaku.utils import tokenize
 
 # Supress ebooklib warnings.
 warnings.filterwarnings("ignore", category=FutureWarning)

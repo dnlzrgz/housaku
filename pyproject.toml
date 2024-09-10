@@ -1,6 +1,6 @@
 [project]
-name = "sagasu"
-version = "0.1.1"
+name = "housaku"
+version = "0.1.2"
 description = "A personal search engine."
 readme = "README.md"
 license = "MIT"
@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sagasu = "sagasu:cli.cli"
+housaku = "housaku:cli.cli"
 
 [build-system]
 requires = ["hatchling"]

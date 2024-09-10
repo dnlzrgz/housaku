@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from sagasu.files import list_files, read_docx, read_epub, read_txt, read_md, read_pdf
+from housaku.files import list_files, read_docx, read_epub, read_txt, read_md, read_pdf
 
 TEST_FILES_DIR = Path(__file__).parent / "examples"
 

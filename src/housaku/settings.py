@@ -9,7 +9,7 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
-_app_dir = Path(click.get_app_dir(app_name="sagasu"))
+_app_dir = Path(click.get_app_dir(app_name="housaku"))
 
 
 class Files(BaseModel):

@@ -1,6 +1,6 @@
 from sqlalchemy import update
 from sqlalchemy.orm import Session
-from sagasu.models import Doc, Posting, Word
+from housaku.models import Doc, Posting, Word
 
 
 class Repository[T: (Doc, Posting, Word)]:

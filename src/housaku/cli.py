@@ -8,14 +8,14 @@ from rich.status import Status
 from rich.table import Table
 from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import Session
-from sagasu.db import init_db
-from sagasu.feeds import fetch_feed, fetch_post
-from sagasu.files import list_files, extract_tokens
-from sagasu.models import Doc, Posting, Word
-from sagasu.repositories import DocRepository, PostingRepository, WordRepository
-from sagasu.search import search
-from sagasu.settings import Settings
-from sagasu.utils import tokenize
+from housaku.db import init_db
+from housaku.feeds import fetch_feed, fetch_post
+from housaku.files import list_files, extract_tokens
+from housaku.models import Doc, Posting, Word
+from housaku.repositories import DocRepository, PostingRepository, WordRepository
+from housaku.search import search
+from housaku.settings import Settings
+from housaku.utils import tokenize
 
 console = Console()
 

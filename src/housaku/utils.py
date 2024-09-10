@@ -1,6 +1,6 @@
 import string
 from selectolax.parser import HTMLParser
-from sagasu.stop_words import STOP_WORDS
+from housaku.stop_words import STOP_WORDS
 
 translation_table = str.maketrans(string.punctuation, " " * len(string.punctuation))
 

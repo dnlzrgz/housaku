@@ -1,5 +1,5 @@
 import pytest
-from sagasu.utils import tokenize
+from housaku.utils import tokenize
 
 
 @pytest.fixture

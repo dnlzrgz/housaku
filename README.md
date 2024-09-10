@@ -1,6 +1,6 @@
-# Sagasu (探す)
+# Housaku (豊作)
 
-Sagasu is a powerful yet simple personal search engine that allows you to index and search a wide range of documents and posts.
+Housaku is a powerful yet simple personal search engine that allows you to index and search a wide range of documents and posts.
 
 ## Features
 
@@ -12,11 +12,11 @@ Sagasu is a powerful yet simple personal search engine that allows you to index 
   - DOCX.
 - **Feed Integration**: Index content from your favorite RSS and Atom feeds.
 - **Fast search times**: Optimized search algorithm for fast results.
-- **Incremental indexing**: Sagasu skips already indexed documents, allowing you to gradually build your corpus without having to worry about redundancy.
+- **Incremental indexing**: Housaku skips already indexed documents, allowing you to gradually build your corpus without having to worry about redundancy.
 
 ## WIP
 
-Sagasu is an ongoind project, and several major features are in the pipeline, including:
+Housaku is an ongoind project, and several major features are in the pipeline, including:
 
 - A user-friendly Web UI.
 - A TUI for command-line enthusiasts.
@@ -27,37 +27,37 @@ Sagasu is an ongoind project, and several major features are in the pipeline, in
 
 ## Motivation
 
-As someone who stores a wealth of documents on my hard drive—ranging from academic PDFs to personal notes in Obsidian—I often found it challenging to search across multiple applications and file types. I wanted a solution that would allow me to search not only my notes but also important books in my Calibre library and blog posts from my favorite feeds. This inspired me to build Sagasu.
+As someone who stores a wealth of documents on my hard drive—ranging from academic PDFs to personal notes in Obsidian—I often found it challenging to search across multiple applications and file types. I wanted a solution that would allow me to search not only my notes but also important books in my Calibre library and blog posts from my favorite feeds. This inspired me to build Housaku.
 
 ## Install
 
 ### Via `pip`
 
 ```bash
-pip install sagasu
+pip install housaku
 ```
 
 ### Via `pipx`
 
 ```bash
-pipx install sagasu
+pipx install housaku
 ```
 
 ### Via `uv`
 
 ```bash
-uv tool add sagasu
+uv tool add housaku
 
 # Or
 
-uvx sagasu
+uvx housaku
 ```
 
 ## Usage
 
 ### Configuration
 
-To start using Sagasu, the first step is to create a `config.toml` file located at `$XDG_CONFIG_HOME/sagasu/config.toml`. This folder will also contain the SQLite database where all the indexed data will be stored.
+To start using Housaku, the first step is to create a `config.toml` file located at `$XDG_CONFIG_HOME/housaku/config.toml`. This folder will also contain the SQLite database where all the indexed data will be stored.
 
 You configuration file should look something like this:
 
@@ -92,20 +92,20 @@ urls = [
 Once you have configured your directories and/or feeds, run the following command to start the indexing process.
 
 ```bash
-sagasu index
+housaku index
 ```
 
-Indexing may vary from a few seconds to several minutes, depending on the size and type of files being indexed. You can begin searching as soon as some documents have been indexed, but it's advisable to allow some time for the initial indexing process. Sagasu will skip documents and posts that have already been indexed, allowing you to build your corpus gradually.
+Indexing may vary from a few seconds to several minutes, depending on the size and type of files being indexed. You can begin searching as soon as some documents have been indexed, but it's advisable to allow some time for the initial indexing process. Housaku will skip documents and posts that have already been indexed, allowing you to build your corpus gradually.
 
 ### Search
 
-Currently, Sagasu does not support a query language. It just matches keywords in your search terms with those saved in the database. To perform a search then, use the following command:
+Currently, Housaku does not support a query language. It just matches keywords in your search terms with those saved in the database. To perform a search then, use the following command:
 
 ```bash
-sagasu search --query "search engine"
+housaku search --query "search engine"
 
 # You can also limit the number of results
-sagasu search --query "search engine" --limit 5
+housaku search --query "search engine" --limit 5
 ```
 
 ## Contributing

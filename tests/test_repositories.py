@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from sagasu.repositories import DocRepository
-from sagasu.models import Base, Doc
+from housaku.repositories import DocRepository
+from housaku.models import Base, Doc
 
 
 @pytest.fixture(scope="function")

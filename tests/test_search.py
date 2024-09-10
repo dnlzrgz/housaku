@@ -1,10 +1,10 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from sagasu.db import init_db
-from sagasu.models import Base, Doc, Posting, Word
-from sagasu.repositories import DocRepository, PostingRepository, WordRepository
-from sagasu.search import search
+from housaku.db import init_db
+from housaku.models import Base, Doc, Posting, Word
+from housaku.repositories import DocRepository, PostingRepository, WordRepository
+from housaku.search import search
 
 
 @pytest.fixture(scope="function")

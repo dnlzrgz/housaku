@@ -1,11 +1,11 @@
 search:
-	uv run sagasu search
+	uv run housaku search
 
 index:
-	uv run sagasu index
+	uv run housaku index
 
 app:
-	uv run sagasu app
+	uv run housaku app
 
 test:
 	pytest -v

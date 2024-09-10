@@ -1,7 +1,7 @@
 from math import log
 from sqlalchemy import func, select
 from sqlalchemy.orm.session import Session
-from sagasu.models import Doc, Posting, Word
+from housaku.models import Doc, Posting, Word
 
 
 def search(session: Session, tokens: list[str], limit: int | None = None) -> list[Doc]:

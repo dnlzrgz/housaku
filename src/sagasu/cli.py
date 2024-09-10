@@ -20,7 +20,7 @@ from sagasu.utils import tokenize
 console = Console()
 
 
-@click.group(invoke_without_command=True)
+@click.group()
 @click.pass_context
 def cli(ctx) -> None:
     """
@@ -38,9 +38,6 @@ def cli(ctx) -> None:
     init_db(engine)
 
     ctx.obj["engine"] = engine
-
-    if ctx.invoked_subcommand is None:
-        ctx.forward(search)
 
 
 async def _index_files(

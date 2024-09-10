@@ -1,7 +1,7 @@
 [project]
 name = "sagasu"
-version = "0.1.0"
-description = "A minimalist search engine for personal use."
+version = "0.1.1"
+description = "A personal search engine."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"

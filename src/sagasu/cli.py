@@ -62,11 +62,11 @@ async def _index_files(
                     )
                     return
 
-                result = await extract_tokens(file)
-                doc_in_db = doc_repo.add(Doc(uri=uri))
-                tokens = Counter(result)
+                tokens, metadata = await extract_tokens(file)
+                doc_in_db = doc_repo.add(Doc(uri=uri, properties=metadata))
+                count = Counter(tokens)
 
-                for token, count in tokens.items():
+                for token, count in count.items():
                     word_in_db = word_repo.get_by_attributes(word=token)
                     if not word_in_db:
                         word_in_db = word_repo.add(Word(word=token))
@@ -82,7 +82,7 @@ async def _index_files(
                                 word=word_in_db,
                                 doc=doc_in_db,
                                 count=count,
-                                tf=count / len(result),
+                                tf=count / len(tokens),
                             )
                         )
 
@@ -188,16 +188,14 @@ def index(ctx) -> None:
 )
 @click.option(
     "--query",
-    prompt="Search query",
-)
-@click.option(
-    "--count",
-    default=10,
-    help="Maximum number of results.",
+    help="Search query",
 )
 @click.pass_context
-def search_documents(ctx, query: str, count: int) -> None:
+def search_documents(ctx, query: str) -> None:
     engine = ctx.obj["engine"]
+
+    if not query:
+        query = click.prompt("Search query")
 
     tokens = tokenize(query)
 

@@ -18,54 +18,59 @@ def test_list_files():
 @pytest.mark.asyncio
 async def test_read_txt():
     for test_file in TEST_FILES_DIR.glob("*.txt"):
-        tokens = await read_txt(test_file)
+        tokens, metadata = await read_txt(test_file)
         assert len(tokens)
+        assert metadata
 
 
 @pytest.mark.asyncio
 async def test_read_md():
     for test_file in TEST_FILES_DIR.glob("*.md"):
-        tokens = await read_md(test_file)
+        tokens, metadata = await read_md(test_file)
         assert len(tokens)
+        assert metadata
 
 
 @pytest.mark.asyncio
 async def test_read_pdf():
     for test_file in TEST_FILES_DIR.glob("*.pdf"):
-        tokens = await read_pdf(test_file)
+        tokens, metadata = await read_pdf(test_file)
         assert len(tokens)
+        assert metadata
 
 
 @pytest.mark.asyncio
 async def test_read_epub():
     for test_file in TEST_FILES_DIR.glob("*.epub"):
-        tokens = await read_epub(test_file)
+        tokens, metadata = await read_epub(test_file)
         assert len(tokens)
+        assert metadata
 
 
 @pytest.mark.asyncio
 async def test_read_docx():
     for test_file in TEST_FILES_DIR.glob("*.docx"):
-        tokens = await read_docx(test_file)
+        tokens, metadata = await read_docx(test_file)
         assert len(tokens)
+        assert metadata
 
 
 @pytest.mark.asyncio
 async def test_bench_read_txt(benchmark):
     test_file = TEST_FILES_DIR / "gutenberg_moby_dick.txt"
-    result = await benchmark(read_txt, test_file)
-    assert result
+    tokens, _ = await benchmark(read_txt, test_file)
+    assert tokens
 
 
 @pytest.mark.asyncio
 async def test_bench_read_md(benchmark):
     test_file = TEST_FILES_DIR / "daring_fireball_markdown_syntax.md"
-    result = await benchmark(read_md, test_file)
-    assert result
+    tokens, _ = await benchmark(read_md, test_file)
+    assert tokens
 
 
 @pytest.mark.asyncio
 async def test_bench_read_pdf(benchmark):
     test_file = TEST_FILES_DIR / "gutenberg_the_modern_prometheus.pdf"
-    result = await benchmark(read_pdf, test_file)
-    assert result
+    tokens, _ = await benchmark(read_pdf, test_file)
+    assert tokens

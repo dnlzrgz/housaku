@@ -5,7 +5,6 @@ description = "A minimalistic search engine for personal use."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "textual>=0.78.0",
   "sqlalchemy>=2.0.32",
   "rich>=13.8.0",
   "aiohttp[speedups]>=3.10.5",
@@ -17,7 +16,6 @@ dependencies = [
   "click>=8.1.7",
   "feedparser>=6.0.11",
   "selectolax>=0.3.21",
-  "fastapi[standard]>=0.114.0",
   "python-docx>=1.1.2",
 ]
 
@@ -36,5 +34,4 @@ dev-dependencies = [
   "pytest>=8.3.2",
   "pytest-benchmark>=4.0.0",
   "pytest-asyncio>=0.24.0",
-  "textual-dev>=1.6.1",
 ]

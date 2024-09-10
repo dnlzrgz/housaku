@@ -1,3 +1,7 @@
+---
+published_date: 2024-09-09
+---
+
 # Markdown: Basics
 
 <ul id="ProjectSubmenu">

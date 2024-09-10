@@ -1,11 +1,13 @@
 import asyncio
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 import aiohttp
-import click
+import rich_click as click
+from rich.console import Console
+from rich.status import Status
+from rich.table import Table
 from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import Session
-from rich.console import Console
 from sagasu.db import init_db
 from sagasu.feeds import fetch_feed, fetch_post
 from sagasu.files import list_files, extract_tokens
@@ -22,7 +24,7 @@ console = Console()
 @click.pass_context
 def cli(ctx) -> None:
     """
-    A minimalistic personal search engine.
+    A minimalist personal search engine.
     """
 
     ctx.ensure_object(dict)
@@ -42,8 +44,15 @@ def cli(ctx) -> None:
 
 
 async def _index_files(
-    session: Session, include: list[Path], exclude: list[str]
+    session: Session,
+    status: Status,
+    include: list[Path],
+    exclude: list[str],
 ) -> None:
+    """
+    Index files from the specified list of directories.
+    """
+
     doc_repo = DocRepository(session)
     posting_repo = PostingRepository(session)
     word_repo = WordRepository(session)
@@ -58,7 +67,7 @@ async def _index_files(
                 doc_in_db = doc_repo.get_by_attributes(uri=uri)
                 if doc_in_db:
                     console.print(
-                        f"[bold yellow]SKIP:[/] skipping already indexed file: '{uri}'"
+                        f"[bold yellow]SKIP:[/] file already indexed: '{uri}'"
                     )
                     return
 
@@ -86,28 +95,32 @@ async def _index_files(
                             )
                         )
 
-                console.print(f"[bold green]SUCCESS:[/] successfully indexed '{file}'.")
+                console.print(f"[bold green]OK:[/] indexed '{file}'.")
                 session.commit()
             except Exception as e:
                 console.print(
                     f"[bold red]ERROR:[/] something went wrong while reading '{file}': {e}"
                 )
 
-    with console.status(
-        "Indexing documents... This may take a moment", spinner="earth"
-    ):
-        for dir in include:
-            try:
-                files = list_files(dir, exclude)
-            except Exception as e:
-                console.print(f"[bold red]ERROR:[/] {e}")
-                continue
+    for dir in include:
+        status.update(
+            f"[bold green]Indexing documents from '{dir.name}'... Please wait, this may take a moment."
+        )
+        try:
+            files = list_files(dir, exclude)
+        except Exception as e:
+            console.print(f"[bold red]ERROR:[/] {e}")
+            continue
 
-            tasks = [process_file(file) for file in files]
-            await asyncio.gather(*tasks)
+        tasks = [process_file(file) for file in files]
+        await asyncio.gather(*tasks)
 
 
-async def _index_feeds(session: Session, feeds: list[str]) -> None:
+async def _index_feeds(session: Session, status: Status, feeds: list[str]) -> None:
+    """
+    Index content from the specified RSS feeds' posts.
+    """
+
     doc_repo = DocRepository(session)
     posting_repo = PostingRepository(session)
     word_repo = WordRepository(session)
@@ -116,18 +129,30 @@ async def _index_feeds(session: Session, feeds: list[str]) -> None:
         try:
             entries = await fetch_feed(client, feed_url)
             for entry in entries:
-                uri = f"{entry}"
+                entry_link = entry.link
+                uri = f"{entry_link}"
 
                 doc_in_db = doc_repo.get_by_attributes(uri=uri)
                 if doc_in_db:
                     console.print(
-                        f"[bold yellow]SKIP:[/] skipping already indexed post: '{uri}'"
+                        f"[bold yellow]SKIP:[/] post already indexed: '{uri}'"
                     )
                     return
 
-                content = await fetch_post(client, entry)
+                content = await fetch_post(client, entry_link)
                 result = tokenize(content)
-                doc_in_db = doc_repo.add(Doc(uri=uri))
+                metadata = {
+                    "title": entry.get("title", ""),
+                    "link": entry_link,
+                    "published": entry.get("published", ""),
+                    "author": entry.get("author", ""),
+                    "summary": entry.get("summary", ""),
+                    "categories": [
+                        category.term for category in entry.get("categories", [])
+                    ],
+                }
+
+                doc_in_db = doc_repo.add(Doc(uri=uri, properties=metadata))
                 tokens = Counter(result)
 
                 for token, count in tokens.items():
@@ -150,31 +175,48 @@ async def _index_feeds(session: Session, feeds: list[str]) -> None:
                             )
                         )
 
-                console.print(f"[bold green]SUCCESS:[/] successfully indexed '{uri}'.")
+                console.print(f"[bold green]OK:[/] indexed '{uri}'.")
                 session.commit()
         except Exception as e:
             console.print(f"[bold red]ERROR:[/] {e}")
 
-    with console.status(
-        "Fetching feeds and indexing content ... This may take a moment",
-        spinner="earth",
-    ):
-        async with aiohttp.ClientSession() as client:
-            tasks = [process_feed(client, feed) for feed in feeds]
-            await asyncio.gather(*tasks)
+    status.update(
+        "[bold green]Indexing feeds and posts... Please wait, this may take a moment."
+    )
+    async with aiohttp.ClientSession() as client:
+        tasks = [process_feed(client, feed) for feed in feeds]
+        await asyncio.gather(*tasks)
 
 
 async def _index(session: Session, settings: Settings):
-    await _index_files(session, settings.files.include, settings.files.exclude)
-    await _index_feeds(session, settings.feeds.urls)
+    """
+    Start indexing of files and feeds based on the settings.
+    """
+
+    with console.status(
+        "[bold green]Start indexing... Please, wait a moment.",
+        spinner="arrow",
+    ) as status:
+        await _index_files(
+            session,
+            status,
+            settings.files.include,
+            settings.files.exclude,
+        )
+        await _index_feeds(session, status, settings.feeds.urls)
 
 
 @cli.command(
     name="index",
-    help="Index document for the specified directories.",
+    short_help="Start indexing documents and posts.",
 )
 @click.pass_context
 def index(ctx) -> None:
+    """
+    Index documents and posts from the specified sources in the
+    config.toml file.
+    """
+
     engine = ctx.obj["engine"]
     settings = ctx.obj["settings"]
 
@@ -184,30 +226,62 @@ def index(ctx) -> None:
 
 @cli.command(
     name="search",
-    help="Search for documents.",
+    short_help="Search for documents and posts.",
 )
 @click.option(
+    "-q",
     "--query",
-    help="Search query",
+    prompt="Search terms",
+    help="Search terms to find relevant documents.",
+)
+@click.option(
+    "-l",
+    "--limit",
+    type=int,
+    default=None,
+    help="Limit the number of documents returned.",
 )
 @click.pass_context
-def search_documents(ctx, query: str) -> None:
+def search_documents(ctx, query: str, limit: int) -> None:
+    """
+    Search for documents and posts based on the provided query.
+    """
+
     engine = ctx.obj["engine"]
 
-    if not query:
-        query = click.prompt("Search query")
-
     tokens = tokenize(query)
-
     with Session(engine) as session:
-        results = search(session, tokens)
+        results = search(session, tokens, limit)
         if not results:
             console.print("[yellow]No results found.[/]")
             return
 
-        console.print(f"[green]Found {len(results)} results:[/]")
+        table = Table(
+            show_header=True,
+            header_style="bold",
+            show_lines=True,
+        )
+        table.add_column("Type", width=5, justify="center")
+        table.add_column("Name")
+        table.add_column("URI")
+
         for result in results:
-            console.print(f"'{result.uri}'")
+            if result.properties.get("name", None):
+                file_name = result.properties.get("name", result.uri)
+                table.add_row(
+                    ":scroll:",
+                    file_name,
+                    f"[link=file://{result.uri}]{result.uri}[/]",
+                )
+            else:
+                title = result.properties.get("title", result.uri)
+                table.add_row(
+                    ":globe_with_meridians:",
+                    title,
+                    f"[link={result.uri}]{result.uri}[/]",
+                )
+
+        console.print(table)
 
 
 @cli.command(
@@ -216,12 +290,16 @@ def search_documents(ctx, query: str) -> None:
 )
 @click.pass_context
 def vacuum(ctx) -> None:
+    """
+    Reclaims unused space in the database.
+    """
+
     engine = ctx.obj["engine"]
     with Session(engine) as session:
         try:
             session.execute(text("VACUUM"))
             session.commit()
-            console.print("[bold green]SUCCESS:[/] unused space has been reclaimed!")
+            console.print("[bold green]OK:[/] unused space has been reclaimed!")
         except exc.SQLAlchemyError as e:
             console.print(
                 f"[bold red]ERROR:[/] something went wrong while reclaiming space: {e}"

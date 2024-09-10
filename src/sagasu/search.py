@@ -4,7 +4,7 @@ from sqlalchemy.orm.session import Session
 from sagasu.models import Doc, Posting, Word
 
 
-def search(session: Session, tokens: list[str]) -> list[Doc]:
+def search(session: Session, tokens: list[str], limit: int | None = None) -> list[Doc]:
     num_docs = session.scalar(select(func.count()).select_from(Doc))
     if not num_docs:
         return []
@@ -29,9 +29,15 @@ def search(session: Session, tokens: list[str]) -> list[Doc]:
         tf_idf_scores[posting.doc_id] = tf_idf_scores.get(posting.doc_id, 0) + tf_idf
 
     sorted_doc_ids = sorted(
-        tf_idf_scores.keys(), key=lambda doc_id: tf_idf_scores[doc_id], reverse=True
+        tf_idf_scores.keys(),
+        key=lambda doc_id: tf_idf_scores[doc_id],
+        reverse=True,
     )
 
-    documents = session.scalars(select(Doc).where(Doc.id.in_(sorted_doc_ids))).all()
+    stmt = select(Doc).where(Doc.id.in_(sorted_doc_ids))
+    if limit:
+        stmt = stmt.limit(limit)
+
+    documents = session.scalars(stmt).all()
 
     return list(documents)

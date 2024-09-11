@@ -57,34 +57,32 @@ uvx housaku
 
 ### Configuration
 
-To start using Housaku, the first step is to create a `config.toml` file located at `$XDG_CONFIG_HOME/housaku/config.toml`. This folder will also contain the SQLite database where all the indexed data will be stored.
+To start using Housaku, the first step is to edit the `config.toml` file located at `$XDG_CONFIG_HOME/housaku/config.toml`. This file is generated the first time you run `housaku` and will look something like this:
 
-You configuration file should look something like this:
+```toml
+# Welcome! This is the configutation file for housaku.
 
-```config.toml
 [files]
-include = [
-  "/home/<your-username>/Documents/",
-]
+# Directories to include for indexing.
+# Example: include = ["/home/<user>/documents/notes"]
+include = []
 
-exclude = [
-  ".git",
-  ".obsidian",
-  ".stfolder",
-  ".stversions",
-  ".trash",
-  "*.mobi"
-]
+# Patterns to exclude from the indexing
+# Example: exclude = ["*.tmp", "backup", "*.png"]
+exclude = []
 
 [feeds]
-urls = [
-  "http://blog.golang.org/feeds/posts/default",
-  "http://www.theverge.com/rss/full.xml",
-  "https://adrianroselli.com/feed",
-  "https://chriscoyier.net/feed/",
-  "https://dnlzrgz.com/rss/",
-  "https://textual.textualize.io/feed_rss_created.xml",
-]
+# List of RSS/Atom feeds to index
+# Example: urls = ["https://example.com/feed", "https://anotherexample.com/rss"]
+urls = []
+```
+
+> Notes: This folder will also contain the SQLite database where all the indexed data will be stored.
+
+To open your `config.toml` file, you can just run the following command:
+
+```bash
+housaku config
 ```
 
 ### Indexing

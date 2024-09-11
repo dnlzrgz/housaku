@@ -1,0 +1,15 @@
+# Welcome! This is the configutation file for housaku.
+
+[files]
+# Directories to include for indexing.
+# Example: include = ["/home/<user>/documents/notes"]
+include = []
+
+# Patterns to exclude from the indexing
+# Example: exclude = ["*.tmp", "backup", "*.png"]
+exclude = []
+
+[feeds]
+# List of RSS/Atom feeds to index
+# Example: urls = ["https://example.com/feed", "https://anotherexample.com/rss"]
+urls = []

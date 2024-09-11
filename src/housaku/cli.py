@@ -1,4 +1,6 @@
 import asyncio
+import os
+import subprocess
 from collections import Counter
 from pathlib import Path
 import aiohttp
@@ -6,7 +8,7 @@ import rich_click as click
 from rich.console import Console
 from rich.status import Status
 from rich.table import Table
-from sqlalchemy import create_engine, exc, text
+from sqlalchemy import create_engine, exc, except_, text
 from sqlalchemy.orm import Session
 from housaku.db import init_db
 from housaku.feeds import fetch_feed, fetch_post
@@ -14,7 +16,7 @@ from housaku.files import list_files, extract_tokens
 from housaku.models import Doc, Posting, Word
 from housaku.repositories import DocRepository, PostingRepository, WordRepository
 from housaku.search import search
-from housaku.settings import Settings
+from housaku.settings import Settings, config_file_path
 from housaku.utils import tokenize
 
 console = Console()
@@ -279,6 +281,18 @@ def search_documents(ctx, query: str, limit: int) -> None:
                 )
 
         console.print(table)
+
+
+@cli.command(name="config", help="Open the configuration file.")
+def config() -> None:
+    user_editor = os.environ.get("EDITOR", None)
+    try:
+        if user_editor:
+            subprocess.run([user_editor, str(config_file_path)], check=True)
+        else:
+            subprocess.run(["open", str(config_file_path)], check=True)
+    except Exception as e:
+        console.print(f"[bold red]ERROR:[/] Failed to open the configuration file: {e}")
 
 
 @cli.command(

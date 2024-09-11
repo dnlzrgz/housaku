@@ -93,7 +93,13 @@ Once you have configured your directories and/or feeds, run the following comman
 housaku index
 ```
 
-Indexing may vary from a few seconds to several minutes, depending on the size and type of files being indexed. You can begin searching as soon as some documents have been indexed, but it's advisable to allow some time for the initial indexing process. Housaku will skip documents and posts that have already been indexed, allowing you to build your corpus gradually.
+If you want to specify directories for indexing when running the `index` command, use the `-i` option. For example:
+
+```bash
+housaku index -i "/home/<user>/Documents/notes" -i "/home/<user>/Documents/vault/"
+```
+
+> Note: Indexing may vary from a few seconds to several minutes, depending on the size and type of files being indexed. You can begin searching as soon as some documents have been indexed, but it's advisable to allow some time for the initial indexing process. Housaku will skip documents and posts that have already been indexed, allowing you to build your corpus gradually.
 
 ### Search
 

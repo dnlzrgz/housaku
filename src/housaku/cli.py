@@ -8,7 +8,7 @@ import rich_click as click
 from rich.console import Console
 from rich.status import Status
 from rich.table import Table
-from sqlalchemy import create_engine, exc, except_, text
+from sqlalchemy import create_engine, exc, exists, text
 from sqlalchemy.orm import Session
 from housaku.db import init_db
 from housaku.feeds import fetch_feed, fetch_post
@@ -187,7 +187,9 @@ async def _index_feeds(session: Session, status: Status, feeds: list[str]) -> No
         await asyncio.gather(*tasks)
 
 
-async def _index(session: Session, settings: Settings):
+async def _index(
+    session: Session, include: list[Path], exclude: list[str], urls: list[str]
+):
     """
     Start indexing of files and feeds based on the settings.
     """
@@ -196,21 +198,34 @@ async def _index(session: Session, settings: Settings):
         "[bold green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
-        await _index_files(
-            session,
-            status,
-            settings.files.include,
-            settings.files.exclude,
-        )
-        await _index_feeds(session, status, settings.feeds.urls)
+        await _index_files(session, status, include, exclude)
+        await _index_feeds(session, status, urls)
 
 
 @cli.command(
     name="index",
     short_help="Start indexing documents and posts.",
 )
+@click.option(
+    "-i",
+    "--include",
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        readable=True,
+    ),
+    multiple=True,
+    help="Directory to include for indexing.",
+)
+@click.option(
+    "-e",
+    "--exclude",
+    multiple=True,
+    help="Directory or pattern to exclude from indexing.",
+)
 @click.pass_context
-def index(ctx) -> None:
+def index(ctx, include, exclude) -> None:
     """
     Index documents and posts from the specified sources in the
     config.toml file.
@@ -219,8 +234,21 @@ def index(ctx) -> None:
     engine = ctx.obj["engine"]
     settings = ctx.obj["settings"]
 
+    merged_include = list(
+        set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
+    )
+    merged_exclude = list(set(settings.files.exclude) | set(exclude))
+    urls = settings.feeds.urls
+
     with Session(engine) as session:
-        asyncio.run(_index(session, settings))
+        asyncio.run(
+            _index(
+                session,
+                merged_include,
+                merged_exclude,
+                urls,
+            )
+        )
 
 
 @cli.command(

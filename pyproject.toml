@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "0.1.4"
+version = "0.1.5"
 description = "A personal search engine."
 readme = "README.md"
 license = "MIT"

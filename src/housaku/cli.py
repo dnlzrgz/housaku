@@ -1,14 +1,16 @@
 import asyncio
 import os
 import subprocess
+import urllib.parse
 from collections import Counter
 from pathlib import Path
+from time import perf_counter
 import aiohttp
 import rich_click as click
 from rich.console import Console
 from rich.status import Status
 from rich.table import Table
-from sqlalchemy import create_engine, exc, exists, text
+from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import Session
 from housaku.db import init_db
 from housaku.feeds import fetch_feed, fetch_post
@@ -276,12 +278,17 @@ def search_documents(ctx, query: str, limit: int) -> None:
 
     engine = ctx.obj["engine"]
 
+    start_time = perf_counter()
     tokens = tokenize(query)
     with Session(engine) as session:
         results = search(session, tokens, limit)
+
         if not results:
             console.print("[yellow]No results found.[/]")
             return
+
+        end_time = perf_counter()
+        elapsed_time = end_time - start_time
 
         table = Table(
             show_header=True,
@@ -295,10 +302,9 @@ def search_documents(ctx, query: str, limit: int) -> None:
         for result in results:
             if result.properties.get("name", None):
                 file_name = result.properties.get("name", result.uri)
+                encoded_uri = urllib.parse.quote(result.uri, safe=":/")
                 table.add_row(
-                    ":scroll:",
-                    file_name,
-                    f"[link=file://{result.uri}]{result.uri}[/]",
+                    ":scroll:", file_name, f"[link=file://{encoded_uri}]{result.uri}[/]"
                 )
             else:
                 title = result.properties.get("title", result.uri)
@@ -309,6 +315,11 @@ def search_documents(ctx, query: str, limit: int) -> None:
                 )
 
         console.print(table)
+        console.print(
+            f"Search completed in {elapsed_time:.2f}s",
+            highlight=False,
+            justify="center",
+        )
 
 
 @cli.command(name="config", help="Open the configuration file.")

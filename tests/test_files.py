@@ -6,10 +6,7 @@ TEST_FILES_DIR = Path(__file__).parent / "examples"
 
 
 def test_list_files():
-    file_list = set()
-    for file in list_files(TEST_FILES_DIR):
-        file_list.add(file)
-
+    file_list = list_files(TEST_FILES_DIR)
     assert len(file_list) == sum(
         1 for item in TEST_FILES_DIR.iterdir() if item.is_file()
     )
@@ -53,6 +50,11 @@ async def test_read_docx():
         tokens, metadata = await read_docx(test_file)
         assert len(tokens)
         assert metadata
+
+
+def test_bench_list_files(benchmark):
+    file_list = benchmark(list_files, TEST_FILES_DIR)
+    assert file_list
 
 
 @pytest.mark.asyncio

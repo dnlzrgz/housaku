@@ -1,5 +1,8 @@
+from pathlib import Path
 import pytest
-from housaku.utils import tokenize
+from housaku.utils import tokenize, get_digest
+
+TEST_FILES_DIR = Path(__file__).parent / "examples"
 
 
 @pytest.fixture
@@ -35,6 +38,11 @@ def long_text(medium_text) -> str:
     return medium_text * 10
 
 
+def test_get_digest_from_files():
+    for file in TEST_FILES_DIR.iterdir():
+        assert get_digest(file)
+
+
 @pytest.mark.parametrize(
     "input, expected",
     [
@@ -46,6 +54,11 @@ def long_text(medium_text) -> str:
 )
 def test_no_stop_words_after_tokenization(input, expected):
     assert tokenize(input) == expected
+
+
+def test_bench_get_digest(benchmark):
+    result = benchmark(get_digest, TEST_FILES_DIR / "gutenberg_moby_dick.txt")
+    assert result
 
 
 def test_bench_tokenize_small_text(short_text, benchmark):

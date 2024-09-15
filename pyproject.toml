@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "0.1.5"
+version = "0.1.6"
 description = "A personal search engine."
 readme = "README.md"
 license = "MIT"
@@ -19,6 +19,7 @@ dependencies = [
   "selectolax>=0.3.21",
   "python-docx>=1.1.2",
   "rich-click>=1.8.3",
+  "fastapi[standard]>=0.114.1",
 ]
 
 [project.scripts]

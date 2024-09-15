@@ -7,7 +7,6 @@ from pathlib import Path
 from time import perf_counter
 import aiohttp
 import rich_click as click
-from rich.console import Console
 from rich.status import Status
 from rich.table import Table
 from sqlalchemy import create_engine, exc, text
@@ -19,9 +18,7 @@ from housaku.models import Doc, Posting, Word
 from housaku.repositories import DocRepository, PostingRepository, WordRepository
 from housaku.search import search
 from housaku.settings import Settings, config_file_path
-from housaku.utils import tokenize
-
-console = Console()
+from housaku.utils import get_digest, tokenize, console
 
 
 @click.group()
@@ -66,16 +63,37 @@ async def _index_files(
 
             try:
                 doc_in_db = doc_repo.get_by_attributes(uri=uri)
-                if doc_in_db:
-                    console.print(
-                        f"[bold yellow]SKIP:[/] file already indexed: '{uri}'"
-                    )
-                    return
-
+                content_hash = get_digest(file)
                 tokens, metadata = await extract_tokens(file)
-                doc_in_db = doc_repo.add(Doc(uri=uri, properties=metadata))
-                count = Counter(tokens)
+                if not doc_in_db:
+                    doc_in_db = doc_repo.add(
+                        Doc(
+                            uri=uri,
+                            content_hash=content_hash,
+                            properties=metadata,
+                        )
+                    )
+                else:
+                    if doc_in_db.content_hash == content_hash:
+                        console.print(
+                            f"[yellow][Skip][/] file already indexed: '{uri}'"
+                        )
+                        return
+                    else:
+                        console.print(f"[green][Update][/] updating file '{uri}'")
+                        postings = posting_repo.get_all_by_attributes(
+                            doc_id=doc_in_db.id
+                        )
 
+                        if postings:
+                            for posting in postings:
+                                posting_repo.delete(posting.id)
+
+                            session.commit()
+
+                        doc_repo.update(doc_in_db.id, content_hash=content_hash)
+
+                count = Counter(tokens)
                 for token, count in count.items():
                     word_in_db = word_repo.get_by_attributes(word=token)
                     if not word_in_db:
@@ -96,21 +114,22 @@ async def _index_files(
                             )
                         )
 
-                console.print(f"[bold green]OK:[/] indexed '{file}'.")
+                console.print(f"[green][Ok][/] indexed '{file}'.")
                 session.commit()
             except Exception as e:
                 console.print(
-                    f"[bold red]ERROR:[/] something went wrong while reading '{file}': {e}"
+                    f"[red][Err][/] something went wrong while reading '{file}': {e}"
                 )
+                session.rollback()
 
     for dir in include:
         status.update(
-            f"[bold green]Indexing documents from '{dir.name}'... Please wait, this may take a moment."
+            f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
         )
         try:
             files = list_files(dir, exclude)
         except Exception as e:
-            console.print(f"[bold red]ERROR:[/] {e}")
+            console.print(f"[red][Err][/] {e}")
             continue
 
         tasks = [process_file(file) for file in files]
@@ -135,9 +154,7 @@ async def _index_feeds(session: Session, status: Status, feeds: list[str]) -> No
 
                 doc_in_db = doc_repo.get_by_attributes(uri=uri)
                 if doc_in_db:
-                    console.print(
-                        f"[bold yellow]SKIP:[/] post already indexed: '{uri}'"
-                    )
+                    console.print(f"[yellow][Skip][/] post already indexed: '{uri}'")
                     return
 
                 content = await fetch_post(client, entry_link)
@@ -176,13 +193,14 @@ async def _index_feeds(session: Session, status: Status, feeds: list[str]) -> No
                             )
                         )
 
-                console.print(f"[bold green]OK:[/] indexed '{uri}'.")
+                console.print(f"[green][Ok][/] indexed '{uri}'.")
                 session.commit()
         except Exception as e:
-            console.print(f"[bold red]ERROR:[/] {e}")
+            console.print(f"[red][Err][/] {e}")
+            session.rollback()
 
     status.update(
-        "[bold green]Indexing feeds and posts... Please wait, this may take a moment."
+        "[green]Indexing feeds and posts... Please wait, this may take a moment."
     )
     async with aiohttp.ClientSession() as client:
         tasks = [process_feed(client, feed) for feed in feeds]
@@ -197,7 +215,7 @@ async def _index(
     """
 
     with console.status(
-        "[bold green]Start indexing... Please, wait a moment.",
+        "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
         await _index_files(session, status, include, exclude)
@@ -322,16 +340,19 @@ def search_documents(ctx, query: str, limit: int) -> None:
         )
 
 
-@cli.command(name="config", help="Open the configuration file.")
+@cli.command(
+    name="config",
+    help="Open the configuration file.",
+)
 def config() -> None:
-    user_editor = os.environ.get("EDITOR", None)
+    editor = os.environ.get("EDITOR", None)
     try:
-        if user_editor:
-            subprocess.run([user_editor, str(config_file_path)], check=True)
+        if editor:
+            subprocess.run([editor, str(config_file_path)], check=True)
         else:
             subprocess.run(["open", str(config_file_path)], check=True)
     except Exception as e:
-        console.print(f"[bold red]ERROR:[/] Failed to open the configuration file: {e}")
+        console.print(f"[red][Err][/] Failed to open the configuration file: {e}")
 
 
 @cli.command(
@@ -349,8 +370,8 @@ def vacuum(ctx) -> None:
         try:
             session.execute(text("VACUUM"))
             session.commit()
-            console.print("[bold green]OK:[/] unused space has been reclaimed!")
+            console.print("[green][Ok][/] unused space has been reclaimed!")
         except exc.SQLAlchemyError as e:
             console.print(
-                f"[bold red]ERROR:[/] something went wrong while reclaiming space: {e}"
+                f"[red][Err][/] something went wrong while reclaiming space: {e}"
             )

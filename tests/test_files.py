@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from housaku.files import list_files, read_docx, read_epub, read_txt, read_md, read_pdf
+from housaku.files import list_files, read_txt, read_md, read_generic_doc
 
 TEST_FILES_DIR = Path(__file__).parent / "examples"
 
@@ -31,7 +31,7 @@ async def test_read_md():
 @pytest.mark.asyncio
 async def test_read_pdf():
     for test_file in TEST_FILES_DIR.glob("*.pdf"):
-        tokens, metadata = await read_pdf(test_file)
+        tokens, metadata = await read_generic_doc(test_file)
         assert len(tokens)
         assert metadata
 
@@ -39,7 +39,7 @@ async def test_read_pdf():
 @pytest.mark.asyncio
 async def test_read_epub():
     for test_file in TEST_FILES_DIR.glob("*.epub"):
-        tokens, metadata = await read_epub(test_file)
+        tokens, metadata = await read_generic_doc(test_file)
         assert len(tokens)
         assert metadata
 
@@ -47,7 +47,7 @@ async def test_read_epub():
 @pytest.mark.asyncio
 async def test_read_docx():
     for test_file in TEST_FILES_DIR.glob("*.docx"):
-        tokens, metadata = await read_docx(test_file)
+        tokens, metadata = await read_generic_doc(test_file)
         assert len(tokens)
         assert metadata
 
@@ -74,5 +74,12 @@ async def test_bench_read_md(benchmark):
 @pytest.mark.asyncio
 async def test_bench_read_pdf(benchmark):
     test_file = TEST_FILES_DIR / "gutenberg_the_modern_prometheus.pdf"
-    tokens, _ = await benchmark(read_pdf, test_file)
+    tokens, _ = await benchmark(read_generic_doc, test_file)
+    assert tokens
+
+
+@pytest.mark.asyncio
+async def test_bench_read_epub(benchmark):
+    test_file = TEST_FILES_DIR / "fundamental_accessibility.epub"
+    tokens, _ = await benchmark(read_generic_doc, test_file)
     assert tokens

@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "0.1.6"
+version = "0.1.8"
 description = "A personal search engine."
 readme = "README.md"
 license = "MIT"
@@ -12,14 +12,12 @@ dependencies = [
   "python-frontmatter>=1.1.0",
   "pydantic-settings>=2.4.0",
   "aiofile>=3.8.8",
-  "pypdf>=4.3.1",
-  "ebooklib>=0.18",
   "click>=8.1.7",
   "feedparser>=6.0.11",
   "selectolax>=0.3.21",
-  "python-docx>=1.1.2",
   "rich-click>=1.8.3",
   "fastapi[standard]>=0.114.1",
+  "pymupdf>=1.24.10",
 ]
 
 [project.scripts]

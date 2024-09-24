@@ -10,10 +10,21 @@ class Doc(Base):
     __tablename__ = "documents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    uri: Mapped[str] = mapped_column(nullable=False, unique=True)
+    uri: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=True)
     content_hash: Mapped[str] = mapped_column(Text, nullable=True)
     properties: Mapped[dict] = mapped_column(JSON, nullable=True)
+
+    parent_id = mapped_column(Integer, ForeignKey("documents.id"))
+    parent = relationship(
+        "Doc",
+        back_populates="pages",
+        remote_side=[id],
+    )
+    pages: Mapped[list["Doc"]] = relationship(
+        "Doc",
+        back_populates="parent",
+    )
 
     postings: Mapped[list["Posting"]] = relationship(back_populates="doc")
 

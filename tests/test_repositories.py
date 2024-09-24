@@ -21,7 +21,9 @@ def docs_repository(session):
 
 @pytest.fixture
 def new_doc():
-    return Doc(uri="./guide.txt", content="Don't Panic.", properties={})
+    return Doc(
+        uri="guide.txt", content="Don't Panic.", properties={"author": "Douglas Adams"}
+    )
 
 
 def test_add_document(docs_repository, new_doc):

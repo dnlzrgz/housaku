@@ -1,9 +1,11 @@
-from collections.abc import Generator
 import os
+import asyncio
 import fnmatch
 import mimetypes
+from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, AsyncGenerator
-from collections import deque, namedtuple
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 import frontmatter
@@ -11,7 +13,20 @@ from aiofile import async_open
 import pymupdf
 from housaku.utils import tokenize
 
-Page = namedtuple("Page", ["uri", "tokens", "properties"])
+
+class Page:
+    def __init__(
+        self,
+        parent_uri: str | None,
+        uri: str,
+        tokens: list[str],
+        properties: dict,
+    ) -> None:
+        self.parent_uri = parent_uri
+        self.uri = uri
+        self.tokens = tokens
+        self.properties = properties
+
 
 other_filetypes = [
     "application/epub+zip",
@@ -21,7 +36,7 @@ other_filetypes = [
 ]
 
 
-def list_files(root: Path, exclude: list[str] = []) -> Generator[Path, Any, Any]:
+def list_files(root: Path, exclude: list[str] = []) -> Generator[Path, None, None]:
     if not root.is_dir():
         raise Exception(f"path '{root}' is not a directory")
 
@@ -72,7 +87,12 @@ async def read_txt(file: Path) -> Page:
 
     async with async_open(file, "r") as af:
         content = await af.read()
-        return Page(file.resolve(), tokenize(content), metadata)
+        return Page(
+            None,
+            f"{file.resolve()}",
+            tokenize(content),
+            metadata,
+        )
 
 
 async def read_md(file: Path) -> Page:
@@ -83,29 +103,42 @@ async def read_md(file: Path) -> Page:
         post = frontmatter.loads(content)
 
         return Page(
-            file.resolve(),
+            None,
+            f"{file.resolve()}",
             tokenize(post.content),
-            {**metadata, **{key: str(value) for key, value in post.metadata.items()}},
+            metadata | {key: f"{value}" for key, value in post.metadata.items()},
         )
 
 
-async def read_pdf(file: Path) -> AsyncGenerator[Page, Any]:
+def _read_pdf(file: Path) -> list[Page]:
     metadata = get_file_metadata(file)
+    uri = f"{file.resolve()}"
 
     with pymupdf.open(file, filetype="pdf") as doc:
+        pages = [Page(None, uri, [], metadata | doc.metadata)]
+
         for page in doc:
-            yield Page(
-                f"{file.resolve()}?page={page.number}",
-                tokenize(page.get_text()),
-                {
-                    **metadata,
-                    **doc.metadata,
-                    "page": page.number,
-                },
+            pages.append(
+                Page(
+                    uri,
+                    f"{uri}?page={page.number}",
+                    tokenize(page.get_text()),
+                    {"page": page.number},
+                )
             )
 
+        return pages
 
-async def read_generic_doc(file: Path) -> Page:
+
+async def read_pdf(file: Path) -> AsyncGenerator[Page, Any]:
+    loop = asyncio.get_running_loop()
+
+    with ThreadPoolExecutor() as pool:
+        for page in await loop.run_in_executor(pool, _read_pdf, file):
+            yield page
+
+
+def _read_generic_doc(file: Path) -> Page:
     metadata = get_file_metadata(file)
 
     tokens = []
@@ -114,7 +147,16 @@ async def read_generic_doc(file: Path) -> Page:
             tokens.extend(tokenize(page.get_text()))
 
         return Page(
-            file.resolve(),
+            None,
+            f"{file.resolve()}",
             tokens,
-            {**metadata, **doc.metadata},
+            metadata | doc.metadata,
         )
+
+
+async def read_generic_doc(file: Path) -> Page:
+    loop = asyncio.get_running_loop()
+
+    with ThreadPoolExecutor() as pool:
+        result = await loop.run_in_executor(pool, _read_generic_doc, file)
+        return result

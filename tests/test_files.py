@@ -15,46 +15,49 @@ def test_list_files():
 @pytest.mark.asyncio
 async def test_read_txt():
     for test_file in TEST_FILES_DIR.glob("*.txt"):
-        uri, tokens, metadata = await read_txt(test_file)
-        assert uri == test_file.resolve()
-        assert len(tokens)
-        assert metadata
+        page = await read_txt(test_file)
+
+        assert page.uri == f"{test_file.resolve()}"
+        assert len(page.tokens)
+        assert page.properties
 
 
 @pytest.mark.asyncio
 async def test_read_md():
     for test_file in TEST_FILES_DIR.glob("*.md"):
-        uri, tokens, metadata = await read_md(test_file)
-        assert uri == test_file.resolve()
-        assert len(tokens)
-        assert metadata
+        page = await read_md(test_file)
+
+        assert page.uri == f"{test_file.resolve()}"
+        assert len(page.tokens)
+        assert page.properties
 
 
 @pytest.mark.asyncio
 async def test_read_pdf():
     for test_file in TEST_FILES_DIR.glob("*.pdf"):
         async for page in read_pdf(test_file):
-            uri, _, metadata = page
-            assert uri
-            assert metadata
+            assert page.uri
+            assert page.properties
 
 
 @pytest.mark.asyncio
 async def test_read_epub():
     for test_file in TEST_FILES_DIR.glob("*.epub"):
-        uri, tokens, metadata = await read_generic_doc(test_file)
-        assert uri == test_file.resolve()
-        assert len(tokens)
-        assert metadata
+        page = await read_generic_doc(test_file)
+
+        assert page.uri == f"{test_file.resolve()}"
+        assert len(page.tokens)
+        assert page.properties
 
 
 @pytest.mark.asyncio
 async def test_read_docx():
     for test_file in TEST_FILES_DIR.glob("*.docx"):
-        uri, tokens, metadata = await read_generic_doc(test_file)
-        assert uri == test_file.resolve()
-        assert len(tokens)
-        assert metadata
+        page = await read_generic_doc(test_file)
+
+        assert page.uri == f"{test_file.resolve()}"
+        assert len(page.tokens)
+        assert page.properties
 
 
 def test_bench_list_files(benchmark):
@@ -65,27 +68,29 @@ def test_bench_list_files(benchmark):
 @pytest.mark.asyncio
 async def test_bench_read_txt(benchmark):
     test_file = TEST_FILES_DIR / "gutenberg_moby_dick.txt"
-    uri, _, _ = await benchmark(read_txt, test_file)
-    assert uri == test_file.resolve()
+    page = await benchmark(read_txt, test_file)
+
+    assert page.uri == f"{test_file.resolve()}"
 
 
 @pytest.mark.asyncio
 async def test_bench_read_md(benchmark):
     test_file = TEST_FILES_DIR / "daring_fireball_markdown_syntax.md"
-    uri, _, _ = await benchmark(read_md, test_file)
-    assert uri == test_file.resolve()
+    page = await benchmark(read_md, test_file)
+
+    assert page.uri == f"{test_file.resolve()}"
 
 
 @pytest.mark.asyncio
 async def test_bench_read_pdf(benchmark):
     test_file = TEST_FILES_DIR / "gutenberg_the_modern_prometheus.pdf"
     async for page in benchmark(read_pdf, test_file):
-        uri, _, _ = page
-        assert uri
+        assert page.uri
 
 
 @pytest.mark.asyncio
 async def test_bench_read_epub(benchmark):
     test_file = TEST_FILES_DIR / "fundamental_accessibility.epub"
-    uri, _, _ = await benchmark(read_generic_doc, test_file)
-    assert uri == test_file.resolve()
+    page = await benchmark(read_generic_doc, test_file)
+
+    assert page.uri == f"{test_file.resolve()}"

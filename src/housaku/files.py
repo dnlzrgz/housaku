@@ -1,7 +1,8 @@
+from collections.abc import Generator
 import os
 import fnmatch
 import mimetypes
-import warnings
+from typing import Any, AsyncGenerator
 from collections import deque, namedtuple
 from datetime import datetime
 from pathlib import Path
@@ -10,27 +11,22 @@ from aiofile import async_open
 import pymupdf
 from housaku.utils import tokenize
 
-DocInsights = namedtuple("DocInsights", ["tokens", "properties"])
+Page = namedtuple("Page", ["uri", "tokens", "properties"])
 
 other_filetypes = [
-    "application/pdf",
     "application/epub+zip",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
 
-# Supress ebooklib warnings.
-warnings.filterwarnings("ignore", category=FutureWarning)
 
-
-def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
+def list_files(root: Path, exclude: list[str] = []) -> Generator[Path, Any, Any]:
     if not root.is_dir():
         raise Exception(f"path '{root}' is not a directory")
 
     exclude_set = set(exclude)
     pending_dirs = deque([root])
-    files = []
 
     while pending_dirs:
         dir = pending_dirs.popleft()
@@ -42,20 +38,21 @@ def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
                 pending_dirs.append(path)
 
             if path.is_file():
-                files.append(path.resolve())
-
-    return files
+                yield path.resolve()
 
 
-async def extract_tokens(file: Path) -> DocInsights:
+async def extract_tokens(file: Path) -> AsyncGenerator[Page, Any]:
     mime_type, _ = mimetypes.guess_type(file)
 
     if mime_type == "text/plain":
-        return await read_txt(file)
+        yield await read_txt(file)
     if mime_type == "text/markdown":
-        return await read_md(file)
+        yield await read_md(file)
+    if mime_type == "application/pdf":
+        async for page in read_pdf(file):
+            yield page
     if mime_type in other_filetypes:
-        return await read_generic_doc(file)
+        yield await read_generic_doc(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")
 
@@ -70,28 +67,45 @@ def get_file_metadata(file: Path) -> dict:
     }
 
 
-async def read_txt(file: Path) -> DocInsights:
+async def read_txt(file: Path) -> Page:
     metadata = get_file_metadata(file)
 
     async with async_open(file, "r") as af:
         content = await af.read()
-        return DocInsights(tokenize(content), metadata)
+        return Page(file.resolve(), tokenize(content), metadata)
 
 
-async def read_md(file: Path) -> DocInsights:
+async def read_md(file: Path) -> Page:
     metadata = get_file_metadata(file)
 
     async with async_open(file, "r") as af:
         content = await af.read()
         post = frontmatter.loads(content)
 
-    return DocInsights(
-        tokenize(post.content),
-        {**metadata, **{key: str(value) for key, value in post.metadata.items()}},
-    )
+        return Page(
+            file.resolve(),
+            tokenize(post.content),
+            {**metadata, **{key: str(value) for key, value in post.metadata.items()}},
+        )
 
 
-async def read_generic_doc(file: Path) -> DocInsights:
+async def read_pdf(file: Path) -> AsyncGenerator[Page, Any]:
+    metadata = get_file_metadata(file)
+
+    with pymupdf.open(file, filetype="pdf") as doc:
+        for page in doc:
+            yield Page(
+                f"{file.resolve()}?page={page.number}",
+                tokenize(page.get_text()),
+                {
+                    **metadata,
+                    **doc.metadata,
+                    "page": page.number,
+                },
+            )
+
+
+async def read_generic_doc(file: Path) -> Page:
     metadata = get_file_metadata(file)
 
     tokens = []
@@ -99,4 +113,8 @@ async def read_generic_doc(file: Path) -> DocInsights:
         for page in doc:
             tokens.extend(tokenize(page.get_text()))
 
-    return DocInsights(tokens, {**metadata, **doc.metadata})
+        return Page(
+            file.resolve(),
+            tokens,
+            {**metadata, **doc.metadata},
+        )

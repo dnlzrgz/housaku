@@ -59,62 +59,65 @@ async def _index_files(
 
     async def process_file(file: Path):
         async with sempahore:
-            uri = f"{file}"
+            doc_uri = f"{file}"
 
             try:
-                doc_in_db = doc_repo.get_by_attributes(uri=uri)
+                doc_in_db = doc_repo.get_by_attributes(uri=doc_uri)
                 content_hash = get_digest(file)
-                tokens, metadata = await extract_tokens(file)
-                if not doc_in_db:
-                    doc_in_db = doc_repo.add(
-                        Doc(
-                            uri=uri,
-                            content_hash=content_hash,
-                            properties=metadata,
-                        )
-                    )
-                else:
+
+                if doc_in_db:
                     if doc_in_db.content_hash == content_hash:
                         console.print(
-                            f"[yellow][Skip][/] file already indexed: '{uri}'"
+                            f"[yellow][Skip][/] file already indexed: '{doc_uri}'"
                         )
                         return
                     else:
-                        console.print(f"[green][Update][/] updating file '{uri}'")
-                        postings = posting_repo.get_all_by_attributes(
-                            doc_id=doc_in_db.id
-                        )
+                        # TODO: Clean child pages
+                        # TODO: Clean postings per child page
+                        # TODO: Update hash
+                        pass
 
-                        if postings:
-                            for posting in postings:
-                                posting_repo.delete(posting.id)
-
-                            session.commit()
-
-                        doc_repo.update(doc_in_db.id, content_hash=content_hash)
-
-                count = Counter(tokens)
-                for token, count in count.items():
-                    word_in_db = word_repo.get_by_attributes(word=token)
-                    if not word_in_db:
-                        word_in_db = word_repo.add(Word(word=token))
-
-                    posting_in_db = posting_repo.get_by_attributes(
-                        word_id=word_in_db.id,
-                        doc_id=doc_in_db.id,
+                async for page in extract_tokens(file):
+                    new_doc = Doc(
+                        uri=page.uri,
+                        properties=page.properties,
                     )
 
-                    if not posting_in_db:
-                        posting_in_db = posting_repo.add(
-                            Posting(
-                                word=word_in_db,
-                                doc=doc_in_db,
-                                count=count,
-                                tf=count / len(tokens),
+                    if page.parent_uri:
+                        parent_doc = doc_repo.get_by_attributes(uri=page.parent_uri)
+                        if not parent_doc:
+                            console.print(
+                                f"[red][Err][/] something went wrong while reading '{file}': parent '{page.parent_uri}' does not exist"
                             )
+                        else:
+                            new_doc.parent_id = parent_doc.id
+                    else:
+                        new_doc.content_hash = content_hash
+
+                    doc_in_db = doc_repo.add(new_doc)
+
+                    count = Counter(page.tokens)
+                    for token, count in count.items():
+                        word_in_db = word_repo.get_by_attributes(word=token)
+                        if not word_in_db:
+                            word_in_db = word_repo.add(Word(word=token))
+
+                        posting_in_db = posting_repo.get_by_attributes(
+                            word_id=word_in_db.id,
+                            doc_id=doc_in_db.id,
                         )
 
-                console.print(f"[green][Ok][/] indexed '{file}'.")
+                        if not posting_in_db:
+                            posting_in_db = posting_repo.add(
+                                Posting(
+                                    word=word_in_db,
+                                    doc=doc_in_db,
+                                    count=count,
+                                    tf=count / len(page.tokens),
+                                )
+                            )
+
+                    console.print(f"[green][Ok][/] indexed '{page.uri}'.")
                 session.commit()
             except Exception as e:
                 console.print(

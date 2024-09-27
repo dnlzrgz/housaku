@@ -4,7 +4,7 @@ Housaku is a powerful yet simple personal search engine that allows you to index
 
 ## Features
 
-- **Multi-Format Support**: Index and search files in various formats, including:
+- **Multi-Format Support**: Index and search files in a variety of formats, including:
   - Plain Text Files.
   - Markdown.
   - PDF.
@@ -12,7 +12,9 @@ Housaku is a powerful yet simple personal search engine that allows you to index
   - DOCX.
 - **Feed Integration**: Index content from your favorite RSS and Atom feeds.
 - **Fast search times**: Optimized search algorithm for fast results.
-- **Incremental indexing**: Housaku skips already indexed documents, allowing you to gradually build your corpus without having to worry about redundancy.
+- **Incremental indexing**: Housaku skips documents that have already been indexed, allowing you to build your corpus gradually without worrying about duplicates.
+- **Parallel File Processing**: Housaku uses multiple threads to process files simultaneously, enabling you to index several documents at once.
+- **Concurrent Feed Fetching**: Housaku supports concurrent fetching of RSS and Atom feeds.
 
 ## WIP
 

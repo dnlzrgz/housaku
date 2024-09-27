@@ -1,24 +1,21 @@
 import asyncio
+import concurrent.futures
 import os
 import subprocess
 import urllib.parse
-from collections import Counter
 from pathlib import Path
+from functools import partial
 from time import perf_counter
-import aiohttp
 import rich_click as click
-from rich.status import Status
 from rich.table import Table
 from sqlalchemy import create_engine, exc, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import scoped_session, sessionmaker
 from housaku.db import init_db
-from housaku.feeds import fetch_feed, fetch_post
-from housaku.files import list_files, extract_tokens
-from housaku.models import Doc, Posting, Word
-from housaku.repositories import DocRepository, PostingRepository, WordRepository
+from housaku.feeds import index_feeds
+from housaku.files import list_files, index_file
 from housaku.search import search
 from housaku.settings import Settings, config_file_path
-from housaku.utils import get_digest, tokenize, console
+from housaku.utils import tokenize, console
 
 
 @click.group()
@@ -35,191 +32,16 @@ def cli(ctx) -> None:
     ctx.obj["settings"] = settings
 
     # Setup SQLite database
-    engine = create_engine(settings.sqlite_url)
+    engine = create_engine(
+        settings.sqlite_url,
+        connect_args={"check_same_thread": False},
+    )
     init_db(engine)
 
-    ctx.obj["engine"] = engine
-
-
-async def _index_files(
-    session: Session,
-    status: Status,
-    include: list[Path],
-    exclude: list[str],
-) -> None:
-    """
-    Index files from the specified list of directories.
-    """
-
-    doc_repo = DocRepository(session)
-    posting_repo = PostingRepository(session)
-    word_repo = WordRepository(session)
-
-    sempahore = asyncio.Semaphore(10)
-
-    async def process_file(file: Path):
-        async with sempahore:
-            uri = f"{file}"
-
-            try:
-                doc_in_db = doc_repo.get_by_attributes(uri=uri)
-                content_hash = get_digest(file)
-                tokens, metadata = await extract_tokens(file)
-                if not doc_in_db:
-                    doc_in_db = doc_repo.add(
-                        Doc(
-                            uri=uri,
-                            content_hash=content_hash,
-                            properties=metadata,
-                        )
-                    )
-                else:
-                    if doc_in_db.content_hash == content_hash:
-                        console.print(
-                            f"[yellow][Skip][/] file already indexed: '{uri}'"
-                        )
-                        return
-                    else:
-                        console.print(f"[green][Update][/] updating file '{uri}'")
-                        postings = posting_repo.get_all_by_attributes(
-                            doc_id=doc_in_db.id
-                        )
-
-                        if postings:
-                            for posting in postings:
-                                posting_repo.delete(posting.id)
-
-                            session.commit()
-
-                        doc_repo.update(doc_in_db.id, content_hash=content_hash)
-
-                count = Counter(tokens)
-                for token, count in count.items():
-                    word_in_db = word_repo.get_by_attributes(word=token)
-                    if not word_in_db:
-                        word_in_db = word_repo.add(Word(word=token))
-
-                    posting_in_db = posting_repo.get_by_attributes(
-                        word_id=word_in_db.id,
-                        doc_id=doc_in_db.id,
-                    )
-
-                    if not posting_in_db:
-                        posting_in_db = posting_repo.add(
-                            Posting(
-                                word=word_in_db,
-                                doc=doc_in_db,
-                                count=count,
-                                tf=count / len(tokens),
-                            )
-                        )
-
-                console.print(f"[green][Ok][/] indexed '{file}'.")
-                session.commit()
-            except Exception as e:
-                console.print(
-                    f"[red][Err][/] something went wrong while reading '{file}': {e}"
-                )
-                session.rollback()
-
-    for dir in include:
-        status.update(
-            f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
-        )
-        try:
-            files = list_files(dir, exclude)
-        except Exception as e:
-            console.print(f"[red][Err][/] {e}")
-            continue
-
-        tasks = [process_file(file) for file in files]
-        await asyncio.gather(*tasks)
-
-
-async def _index_feeds(session: Session, status: Status, feeds: list[str]) -> None:
-    """
-    Index content from the specified RSS feeds' posts.
-    """
-
-    doc_repo = DocRepository(session)
-    posting_repo = PostingRepository(session)
-    word_repo = WordRepository(session)
-
-    async def process_feed(client: aiohttp.ClientSession, feed_url: str):
-        try:
-            entries = await fetch_feed(client, feed_url)
-            for entry in entries:
-                entry_link = entry.link
-                uri = f"{entry_link}"
-
-                doc_in_db = doc_repo.get_by_attributes(uri=uri)
-                if doc_in_db:
-                    console.print(f"[yellow][Skip][/] post already indexed: '{uri}'")
-                    return
-
-                content = await fetch_post(client, entry_link)
-                result = tokenize(content)
-                metadata = {
-                    "title": entry.get("title", ""),
-                    "link": entry_link,
-                    "published": entry.get("published", ""),
-                    "author": entry.get("author", ""),
-                    "summary": entry.get("summary", ""),
-                    "categories": [
-                        category.term for category in entry.get("categories", [])
-                    ],
-                }
-
-                doc_in_db = doc_repo.add(Doc(uri=uri, properties=metadata))
-                tokens = Counter(result)
-
-                for token, count in tokens.items():
-                    word_in_db = word_repo.get_by_attributes(word=token)
-                    if not word_in_db:
-                        word_in_db = word_repo.add(Word(word=token))
-
-                    posting_in_db = posting_repo.get_by_attributes(
-                        word_id=word_in_db.id,
-                        doc_id=doc_in_db.id,
-                    )
-
-                    if not posting_in_db:
-                        posting_in_db = posting_repo.add(
-                            Posting(
-                                word=word_in_db,
-                                doc=doc_in_db,
-                                count=count,
-                                tf=count / len(result),
-                            )
-                        )
-
-                console.print(f"[green][Ok][/] indexed '{uri}'.")
-                session.commit()
-        except Exception as e:
-            console.print(f"[red][Err][/] {e}")
-            session.rollback()
-
-    status.update(
-        "[green]Indexing feeds and posts... Please wait, this may take a moment."
-    )
-    async with aiohttp.ClientSession() as client:
-        tasks = [process_feed(client, feed) for feed in feeds]
-        await asyncio.gather(*tasks)
-
-
-async def _index(
-    session: Session, include: list[Path], exclude: list[str], urls: list[str]
-):
-    """
-    Start indexing of files and feeds based on the settings.
-    """
-
-    with console.status(
-        "[green]Start indexing... Please, wait a moment.",
-        spinner="arrow",
-    ) as status:
-        await _index_files(session, status, include, exclude)
-        await _index_feeds(session, status, urls)
+    # Setup scoped session
+    session_factory = sessionmaker(bind=engine)
+    session = scoped_session(session_factory)
+    ctx.obj["session"] = session
 
 
 @cli.command(
@@ -250,9 +72,14 @@ def index(ctx, include, exclude) -> None:
     Index documents and posts from the specified sources in the
     config.toml file.
     """
-
-    engine = ctx.obj["engine"]
     settings = ctx.obj["settings"]
+    session = ctx.obj["session"]
+
+    for dir in include:
+        path = Path(dir)
+        if not path.is_dir():
+            console.print(f"[red][Err][/] Path '{path.resolve()}' is not a directory")
+            return
 
     merged_include = list(
         set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
@@ -260,15 +87,22 @@ def index(ctx, include, exclude) -> None:
     merged_exclude = list(set(settings.files.exclude) | set(exclude))
     urls = settings.feeds.urls
 
-    with Session(engine) as session:
-        asyncio.run(
-            _index(
-                session,
-                merged_include,
-                merged_exclude,
-                urls,
+    with console.status(
+        "[green]Start indexing... Please, wait a moment.",
+        spinner="arrow",
+    ) as status:
+        partial_function = partial(index_file, session)
+
+        for dir in merged_include:
+            status.update(
+                f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
             )
-        )
+            files = list_files(dir, merged_exclude)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                executor.map(partial_function, files)
+
+        asyncio.run(index_feeds(session, status, urls))
 
 
 @cli.command(
@@ -294,50 +128,49 @@ def search_documents(ctx, query: str, limit: int) -> None:
     Search for documents and posts based on the provided query.
     """
 
-    engine = ctx.obj["engine"]
+    session = ctx.obj["session"]
 
     start_time = perf_counter()
     tokens = tokenize(query)
-    with Session(engine) as session:
-        results = search(session, tokens, limit)
+    results = search(session, tokens, limit)
 
-        if not results:
-            console.print("[yellow]No results found.[/]")
-            return
+    if not results:
+        console.print("[yellow]No results found.[/]")
+        return
 
-        end_time = perf_counter()
-        elapsed_time = end_time - start_time
+    end_time = perf_counter()
+    elapsed_time = end_time - start_time
 
-        table = Table(
-            show_header=True,
-            header_style="bold",
-            show_lines=True,
-        )
-        table.add_column("Type", width=5, justify="center")
-        table.add_column("Name")
-        table.add_column("URI")
+    table = Table(
+        show_header=True,
+        header_style="bold",
+        show_lines=True,
+    )
+    table.add_column("Type", width=5, justify="center")
+    table.add_column("Name")
+    table.add_column("URI")
 
-        for result in results:
-            if result.properties.get("name", None):
-                file_name = result.properties.get("name", result.uri)
-                encoded_uri = urllib.parse.quote(result.uri, safe=":/")
-                table.add_row(
-                    ":scroll:", file_name, f"[link=file://{encoded_uri}]{result.uri}[/]"
-                )
-            else:
-                title = result.properties.get("title", result.uri)
-                table.add_row(
-                    ":globe_with_meridians:",
-                    title,
-                    f"[link={result.uri}]{result.uri}[/]",
-                )
+    for result in results:
+        if result.properties.get("name", None):
+            file_name = result.properties.get("name", result.uri)
+            encoded_uri = urllib.parse.quote(result.uri, safe=":/")
+            table.add_row(
+                ":scroll:", file_name, f"[link=file://{encoded_uri}]{result.uri}[/]"
+            )
+        else:
+            title = result.properties.get("title", result.uri)
+            table.add_row(
+                ":globe_with_meridians:",
+                title,
+                f"[link={result.uri}]{result.uri}[/]",
+            )
 
-        console.print(table)
-        console.print(
-            f"Search completed in {elapsed_time:.2f}s",
-            highlight=False,
-            justify="center",
-        )
+    console.print(table)
+    console.print(
+        f"Search completed in {elapsed_time:.2f}s",
+        highlight=False,
+        justify="center",
+    )
 
 
 @cli.command(
@@ -365,13 +198,10 @@ def vacuum(ctx) -> None:
     Reclaims unused space in the database.
     """
 
-    engine = ctx.obj["engine"]
-    with Session(engine) as session:
-        try:
-            session.execute(text("VACUUM"))
-            session.commit()
-            console.print("[green][Ok][/] unused space has been reclaimed!")
-        except exc.SQLAlchemyError as e:
-            console.print(
-                f"[red][Err][/] something went wrong while reclaiming space: {e}"
-            )
+    session = ctx.obj["session"]
+    try:
+        session.execute(text("VACUUM"))
+        session.commit()
+        console.print("[green][Ok][/] unused space has been reclaimed!")
+    except exc.SQLAlchemyError as e:
+        console.print(f"[red][Err][/] something went wrong while reclaiming space: {e}")

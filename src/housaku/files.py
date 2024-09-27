@@ -1,27 +1,23 @@
-import os
 import fnmatch
 import mimetypes
-import warnings
-from collections import deque, namedtuple
+import os
+from collections import deque, Counter
 from datetime import datetime
 from pathlib import Path
 import frontmatter
-from aiofile import async_open
 import pymupdf
-from housaku.utils import tokenize
+from sqlalchemy.orm import Session
+from housaku.models import Doc, Posting, Word
+from housaku.repositories import DocRepository, PostingRepository, WordRepository
+from housaku.utils import get_digest, tokenize, console
 
-DocInsights = namedtuple("DocInsights", ["tokens", "properties"])
-
-other_filetypes = [
+GENERIC_FILETYPES = [
     "application/pdf",
     "application/epub+zip",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
-
-# Supress ebooklib warnings.
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
@@ -47,15 +43,15 @@ def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
     return files
 
 
-async def extract_tokens(file: Path) -> DocInsights:
+def extract_tokens(file: Path) -> tuple[dict, list[str]]:
     mime_type, _ = mimetypes.guess_type(file)
 
     if mime_type == "text/plain":
-        return await read_txt(file)
+        return read_txt(file)
     if mime_type == "text/markdown":
-        return await read_md(file)
-    if mime_type in other_filetypes:
-        return await read_generic_doc(file)
+        return read_md(file)
+    if mime_type in GENERIC_FILETYPES:
+        return read_generic_doc(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")
 
@@ -70,28 +66,26 @@ def get_file_metadata(file: Path) -> dict:
     }
 
 
-async def read_txt(file: Path) -> DocInsights:
+def read_txt(file: Path) -> tuple[dict, list[str]]:
     metadata = get_file_metadata(file)
 
-    async with async_open(file, "r") as af:
-        content = await af.read()
-        return DocInsights(tokenize(content), metadata)
+    with open(file, "r") as f:
+        return metadata, tokenize(f.read())
 
 
-async def read_md(file: Path) -> DocInsights:
+def read_md(file: Path) -> tuple[dict, list[str]]:
     metadata = get_file_metadata(file)
 
-    async with async_open(file, "r") as af:
-        content = await af.read()
-        post = frontmatter.loads(content)
+    with open(file, "r") as f:
+        post = frontmatter.loads(f.read())
 
-    return DocInsights(
+    return (
+        metadata | {key: str(value) for key, value in post.metadata.items()},
         tokenize(post.content),
-        {**metadata, **{key: str(value) for key, value in post.metadata.items()}},
     )
 
 
-async def read_generic_doc(file: Path) -> DocInsights:
+def read_generic_doc(file: Path) -> tuple[dict, list[str]]:
     metadata = get_file_metadata(file)
 
     tokens = []
@@ -99,4 +93,67 @@ async def read_generic_doc(file: Path) -> DocInsights:
         for page in doc:
             tokens.extend(tokenize(page.get_text()))
 
-    return DocInsights(tokens, {**metadata, **doc.metadata})
+    return metadata | doc.metadata, tokens
+
+
+def index_file(session: Session, file: Path) -> None:
+    doc_repo = DocRepository(session)
+    posting_repo = PostingRepository(session)
+    word_repo = WordRepository(session)
+
+    uri = f"{file}"
+    try:
+        doc_in_db = doc_repo.get_by_attributes(uri=uri)
+        content_hash = get_digest(file)
+        metadata, tokens = extract_tokens(file)
+
+        if not doc_in_db:
+            doc_in_db = doc_repo.add(
+                Doc(
+                    uri=uri,
+                    content_hash=content_hash,
+                    properties=metadata,
+                )
+            )
+        else:
+            if doc_in_db.content_hash == content_hash:
+                console.print(f"[yellow][Skip][/] file already indexed: '{uri}'")
+                return
+            else:
+                console.print(f"[green][Update][/] updating file '{uri}'")
+                postings = posting_repo.get_all_by_attributes(doc_id=doc_in_db.id)
+
+                if postings:
+                    for posting in postings:
+                        posting_repo.delete(posting.id)
+
+                    session.commit()
+
+                doc_repo.update(doc_in_db.id, content_hash=content_hash)
+
+        token_count = Counter(tokens)
+        for token, count in token_count.items():
+            word_in_db = word_repo.get_by_attributes(word=token)
+            if not word_in_db:
+                word_in_db = word_repo.add(Word(word=token))
+
+            posting_in_db = posting_repo.get_by_attributes(
+                word_id=word_in_db.id,
+                doc_id=doc_in_db.id,
+            )
+
+            if not posting_in_db:
+                posting_in_db = posting_repo.add(
+                    Posting(
+                        word=word_in_db,
+                        doc=doc_in_db,
+                        count=count,
+                        tf=count / len(tokens),
+                    )
+                )
+
+        session.commit()
+        console.print(f"[green][Ok][/] indexed '{file}'.")
+    except Exception as e:
+        session.rollback()
+        console.print(f"[red][Err][/] something went wrong while reading '{file}': {e}")

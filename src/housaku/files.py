@@ -2,6 +2,7 @@ from collections import deque
 import fnmatch
 import mimetypes
 from pathlib import Path
+from typing import is_typeddict
 import pymupdf
 from housaku.db import db_connection
 from housaku.utils import console
@@ -16,25 +17,25 @@ GENERIC_FILETYPES = [
 
 
 def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
-    if not root.is_dir():
-        # TODO: just add the file if not in exclude list.
-        raise Exception(f"path '{root}' is not a directory")
-
     exclude_set = set(exclude)
     pending_dirs = deque([root])
     files = []
 
-    while pending_dirs:
-        dir = pending_dirs.popleft()
-        for path in dir.iterdir():
-            if any(fnmatch.fnmatch(path.name, pattern) for pattern in exclude_set):
-                continue
+    if root.is_dir():
+        while pending_dirs:
+            dir = pending_dirs.popleft()
+            for path in dir.iterdir():
+                if any(fnmatch.fnmatch(path.name, pattern) for pattern in exclude_set):
+                    continue
 
-            if path.is_dir():
-                pending_dirs.append(path)
+                if path.is_dir():
+                    pending_dirs.append(path)
 
-            if path.is_file():
-                files.append(path.resolve())
+                if path.is_file():
+                    files.append(path.resolve())
+    else:
+        if not any(fnmatch.fnmatch(root.name, pattern) for pattern in exclude_set):
+            files.append(root.resolve())
 
     return files
 

@@ -1,7 +1,7 @@
 [project]
 name = "housaku"
-version = "v0.3.0"
-description = "A personal search engine."
+version = "v0.3.1"
+description = "A powerful personal search engine built on top of SQLite's FTS5."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
@@ -15,6 +15,12 @@ dependencies = [
   "rich-click>=1.8.3",
   "pymupdf>=1.24.10",
 ]
+
+[project.urls]
+homepage = "https://dnlzrgz.com/projects/housaku/"
+source = "https://github.com/dnlzrgz/housaku"
+issues = "https://github.com/dnlzrgz/housaku/issues"
+releases = "https://github.com/dnlzrgz/housaku/releases"
 
 [project.scripts]
 housaku = "housaku:cli.cli"

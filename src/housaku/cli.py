@@ -4,6 +4,7 @@ import os
 import subprocess
 import urllib.parse
 from functools import partial
+from multiprocessing import cpu_count
 from pathlib import Path
 from time import perf_counter
 import rich_click as click
@@ -55,8 +56,15 @@ def cli(ctx) -> None:
     multiple=True,
     help="Directory or pattern to exclude from indexing.",
 )
+@click.option(
+    "-t",
+    "--max-threads",
+    type=click.IntRange(min=1),
+    default=cpu_count() // 2,
+    help="Maximum number of threads to use for indexing (default: half of CPU cores).",
+)
 @click.pass_context
-def index(ctx, include, exclude) -> None:
+def index(ctx, include, exclude, max_threads) -> None:
     """
     Index documents and posts from the specified sources in the
     config.toml file.
@@ -75,13 +83,23 @@ def index(ctx, include, exclude) -> None:
         "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
+        try:
+            with db_connection(settings.sqlite_url) as conn:
+                conn.execute("DELETE FROM documents")
+                console.print("[green][Ok][/] Cleaned database.")
+        except Exception as e:
+            console.print(f"[red][Err][/] Failed to clear database: {e}")
+            return
+
         for dir in merged_include:
             status.update(
                 f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
             )
             files = list_files(dir, merged_exclude)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_threads
+            ) as executor:
                 executor.map(partial_function, files)
 
         status.update(

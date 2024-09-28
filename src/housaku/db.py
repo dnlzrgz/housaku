@@ -1,32 +1,37 @@
+import sqlite3
 from contextlib import contextmanager
-from sqlalchemy.orm import Session
-from housaku.models import Base
 
 
-def init_db(engine) -> None:
-    Base.metadata.create_all(engine)
-    with engine.connect() as connect:
-        cursor = connect.connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON;")
-        cursor.execute("PRAGMA journal_mode=WAL;")
-        cursor.execute("PRAGMA synchronous=NORMAL;")
-        cursor.execute("PRAGMA synchronous=NORMAL;")
-        cursor.execute("PRAGMA busy_timeout=5000;")
-        cursor.execute("PRAGMA temp_store=MEMORY;")
-        cursor.execute("PRAGMA nmap_size = 134217728;")
-        cursor.execute("PRAGMA journal_size_limit = 67108864;")
-        cursor.execute("PRAGMA cache_size = 2000;")
+def init_db(sqlite_url: str) -> None:
+    conn = sqlite3.connect(sqlite_url)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE VIRTUAL TABLE IF NOT EXISTS documents USING fts5 (
+        uri, title, type, content, tokenize="porter unicode61"
+    );
+    """)
+
+    cursor.execute("PRAGMA foreign_keys=ON;")
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.execute("PRAGMA synchronous=NORMAL;")
+    cursor.execute("PRAGMA busy_timeout=5000;")
+    cursor.execute("PRAGMA temp_store=MEMORY;")
+    cursor.execute("PRAGMA cache_size = 2000;")
+
+    conn.commit()
+    conn.close()
 
 
 @contextmanager
-def session_manager(engine):
-    session = Session(engine)
+def db_connection(sqlite_url: str):
+    conn = sqlite3.connect(sqlite_url)
 
     try:
-        yield session
-        session.commit()
+        yield conn
+        conn.commit()
     except:
-        session.rollback()
+        conn.rollback()
         raise
     finally:
-        session.close()
+        conn.close()

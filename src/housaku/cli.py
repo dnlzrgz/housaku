@@ -3,19 +3,17 @@ import concurrent.futures
 import os
 import subprocess
 import urllib.parse
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 from time import perf_counter
 import rich_click as click
 from rich.table import Table
-from sqlalchemy import create_engine, exc, text
-from sqlalchemy.orm import scoped_session, sessionmaker
-from housaku.db import init_db
+from housaku.db import init_db, db_connection
 from housaku.feeds import index_feeds
 from housaku.files import list_files, index_file
-from housaku.search import search
 from housaku.settings import Settings, config_file_path
-from housaku.utils import tokenize, console
+from housaku.search import search
+from housaku.utils import console
 
 
 @click.group()
@@ -31,17 +29,8 @@ def cli(ctx) -> None:
     settings = Settings()
     ctx.obj["settings"] = settings
 
-    # Setup SQLite database
-    engine = create_engine(
-        settings.sqlite_url,
-        connect_args={"check_same_thread": False},
-    )
-    init_db(engine)
-
-    # Setup scoped session
-    session_factory = sessionmaker(bind=engine)
-    session = scoped_session(session_factory)
-    ctx.obj["session"] = session
+    # Initialize SQLite database
+    init_db(settings.sqlite_url)
 
 
 @cli.command(
@@ -73,13 +62,6 @@ def index(ctx, include, exclude) -> None:
     config.toml file.
     """
     settings = ctx.obj["settings"]
-    session = ctx.obj["session"]
-
-    for dir in include:
-        path = Path(dir)
-        if not path.is_dir():
-            console.print(f"[red][Err][/] Path '{path.resolve()}' is not a directory")
-            return
 
     merged_include = list(
         set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
@@ -87,22 +69,25 @@ def index(ctx, include, exclude) -> None:
     merged_exclude = list(set(settings.files.exclude) | set(exclude))
     urls = settings.feeds.urls
 
+    partial_function = partial(index_file, settings.sqlite_url)
+
     with console.status(
         "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
-        partial_function = partial(index_file, session)
-
         for dir in merged_include:
             status.update(
                 f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
             )
             files = list_files(dir, merged_exclude)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
                 executor.map(partial_function, files)
 
-        asyncio.run(index_feeds(session, status, urls))
+        status.update(
+            "[green]Indexing feeds and posts... Please wait, this may take a moment."
+        )
+        asyncio.run(index_feeds(settings.sqlite_url, urls))
 
 
 @cli.command(
@@ -119,7 +104,7 @@ def index(ctx, include, exclude) -> None:
     "-l",
     "--limit",
     type=int,
-    default=None,
+    default=20,
     help="Limit the number of documents returned.",
 )
 @click.pass_context
@@ -128,11 +113,10 @@ def search_documents(ctx, query: str, limit: int) -> None:
     Search for documents and posts based on the provided query.
     """
 
-    session = ctx.obj["session"]
-
+    settings = ctx.obj["settings"]
     start_time = perf_counter()
-    tokens = tokenize(query)
-    results = search(session, tokens, limit)
+
+    results = search(settings.sqlite_url, query, limit)
 
     if not results:
         console.print("[yellow]No results found.[/]")
@@ -146,28 +130,29 @@ def search_documents(ctx, query: str, limit: int) -> None:
         header_style="bold",
         show_lines=True,
     )
+
     table.add_column("Type", width=5, justify="center")
     table.add_column("Name")
     table.add_column("URI")
 
-    for result in results:
-        if result.properties.get("name", None):
-            file_name = result.properties.get("name", result.uri)
-            encoded_uri = urllib.parse.quote(result.uri, safe=":/")
+    for uri, title, type in results:
+        encoded_uri = urllib.parse.quote(uri, safe=":/")
+        if type == "file":
             table.add_row(
-                ":scroll:", file_name, f"[link=file://{encoded_uri}]{result.uri}[/]"
+                ":scroll:",
+                title,
+                f"[link=file://{encoded_uri}]{uri}[/]",
             )
         else:
-            title = result.properties.get("title", result.uri)
             table.add_row(
                 ":globe_with_meridians:",
                 title,
-                f"[link={result.uri}]{result.uri}[/]",
+                f"[link={uri}]{uri}[/]",
             )
 
     console.print(table)
     console.print(
-        f"Search completed in {elapsed_time:.2f}s",
+        f"Search completed in {elapsed_time:.3f}s",
         highlight=False,
         justify="center",
     )
@@ -197,11 +182,11 @@ def vacuum(ctx) -> None:
     """
     Reclaims unused space in the database.
     """
+    settings = ctx.obj["settings"]
 
-    session = ctx.obj["session"]
     try:
-        session.execute(text("VACUUM"))
-        session.commit()
-        console.print("[green][Ok][/] unused space has been reclaimed!")
-    except exc.SQLAlchemyError as e:
+        with db_connection(settings.sqlite_url) as conn:
+            conn.execute("VACUUM")
+            console.print("[green][Ok][/] unused space has been reclaimed!")
+    except Exception as e:
         console.print(f"[red][Err][/] something went wrong while reclaiming space: {e}")

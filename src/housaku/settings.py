@@ -25,7 +25,7 @@ class Feeds(BaseModel):
 
 
 class Settings(BaseSettings):
-    sqlite_url: str = f"sqlite:///{app_dir / 'db.sqlite3'}"
+    sqlite_url: str = f"{app_dir / 'db.sqlite3'}"
     files: Files = Files()
     feeds: Feeds = Feeds()
 

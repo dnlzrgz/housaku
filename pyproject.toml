@@ -1,15 +1,13 @@
 [project]
 name = "housaku"
-version = "0.1.8"
+version = "v0.3.0"
 description = "A personal search engine."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-  "sqlalchemy>=2.0.32",
   "rich>=13.8.0",
   "aiohttp[speedups]>=3.10.5",
-  "python-frontmatter>=1.1.0",
   "pydantic-settings>=2.4.0",
   "click>=8.1.7",
   "feedparser>=6.0.11",
@@ -28,9 +26,7 @@ build-backend = "hatchling.build"
 [tool.uv]
 dev-dependencies = [
   "ruff>=0.6.3",
-  "pre-commit>=3.8.0",
   "commitizen>=3.29.0",
   "pytest>=8.3.2",
   "pytest-benchmark>=4.0.0",
-  "pytest-asyncio>=0.24.0",
 ]

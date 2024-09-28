@@ -1,31 +1,26 @@
 # Housaku (豊作)
 
-Housaku is a powerful yet simple personal search engine that allows you to index and search a wide range of documents and posts.
+Housaku is a powerful yet simple personal search engine built on top of SQLite's FTS5.
 
 ## Features
 
-- **Multi-Format Support**: Index and search files in a variety of formats, including:
-  - Plain Text Files.
+- **Support for multiple file formats**: Index files in a variety of formats, including:
+  - Plain text tiles.
   - Markdown.
   - PDF.
   - EPUB.
   - DOCX.
-- **Feed Integration**: Index content from your favorite RSS and Atom feeds.
-- **Fast search times**: Optimized search algorithm for fast results.
-- **Incremental indexing**: Housaku skips documents that have already been indexed, allowing you to build your corpus gradually without worrying about duplicates.
-- **Parallel File Processing**: Housaku uses multiple threads to process files simultaneously, enabling you to index several documents at once.
-- **Concurrent Feed Fetching**: Housaku supports concurrent fetching of RSS and Atom feeds.
+- **Basic Web Scraping**: In addition to personal files, you can also index posts from your favorite RSS/Atom feeds.
+- **Parallel File Processing**: Housaku utilizes multi-threading to process files simultaneously, making the indexing process incredibly fast.
+- **Powered by SQLite's FTS5**: Built on the advanced full-text search capabilities of SQLite's FTS5 extension.
+- **Relevant Results with BM25**: Search results are sorted using the BM25 algorithm, ensuring the most relevant results.
 
 ## WIP
 
 Housaku is an ongoind project, and several major features are in the pipeline, including:
 
-- A user-friendly Web UI.
+- A user-friendly Web interface.
 - A TUI for command-line enthusiasts.
-- Document and post update functionality for already indexed items.
-- Optimizations tweaks for faster indexing times.
-- A better sorting algorithm for search results (maybe the BM25 algorithm).
-- A query language for advanced search capabilities.
 
 ## Motivation
 
@@ -62,7 +57,7 @@ uvx housaku
 To start using Housaku, the first step is to edit the `config.toml` file located at `$XDG_CONFIG_HOME/housaku/config.toml`. This file is generated the first time you run `housaku` and will look something like this:
 
 ```toml
-# Welcome! This is the configutation file for housaku.
+# Welcome! This is the configuration file for housaku.
 
 [files]
 # Directories to include for indexing.
@@ -101,16 +96,14 @@ If you want to specify directories for indexing when running the `index` command
 housaku index -i "/home/<user>/Documents/notes" -i "/home/<user>/Documents/vault/"
 ```
 
-> Note: Indexing may vary from a few seconds to several minutes, depending on the size and type of files being indexed. You can begin searching as soon as some documents have been indexed, but it's advisable to allow some time for the initial indexing process. Housaku will skip documents and posts that have already been indexed, allowing you to build your corpus gradually.
-
 ### Search
 
-Currently, Housaku does not support a query language. It just matches keywords in your search terms with those saved in the database. To perform a search then, use the following command:
+To perform a search, you just need to use the following command:
 
 ```bash
 housaku search --query "search engine"
 
-# You can also limit the number of results
+# By default the limit is 20
 housaku search --query "search engine" --limit 5
 ```
 

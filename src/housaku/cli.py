@@ -21,7 +21,7 @@ from housaku.utils import console
 @click.pass_context
 def cli(ctx) -> None:
     """
-    A minimalist personal search engine.
+    A powerful personal search engine built on top of SQLite's FTS5.
     """
 
     ctx.ensure_object(dict)
@@ -150,22 +150,19 @@ def search_documents(ctx, query: str, limit: int) -> None:
     )
 
     table.add_column("Type", width=5, justify="center")
-    table.add_column("Name")
-    table.add_column("URI")
+    table.add_column("Result")
 
     for uri, title, type in results:
         encoded_uri = urllib.parse.quote(uri, safe=":/")
         if type == "file":
             table.add_row(
                 ":scroll:",
-                title,
-                f"[link=file://{encoded_uri}]{uri}[/]",
+                f"[link=file://{encoded_uri}]{title}[/]",
             )
         else:
             table.add_row(
                 ":globe_with_meridians:",
-                title,
-                f"[link={uri}]{uri}[/]",
+                f"[link={uri}]{title}[/]",
             )
 
     console.print(table)
@@ -181,6 +178,10 @@ def search_documents(ctx, query: str, limit: int) -> None:
     help="Open the configuration file.",
 )
 def config() -> None:
+    """
+    Open the configuration file in the default text editor.
+    """
+
     editor = os.environ.get("EDITOR", None)
     try:
         if editor:

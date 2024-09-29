@@ -2,7 +2,6 @@ from collections import deque
 import fnmatch
 import mimetypes
 from pathlib import Path
-from typing import is_typeddict
 import pymupdf
 from housaku.db import db_connection
 from housaku.utils import console

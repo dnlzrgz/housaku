@@ -14,6 +14,8 @@ GENERIC_FILETYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
 
+pymupdf.JM_mupdf_show_errors = 0
+
 
 def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
     exclude_set = set(exclude)

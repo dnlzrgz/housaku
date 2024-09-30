@@ -3,6 +3,7 @@ import fnmatch
 import mimetypes
 from pathlib import Path
 import pymupdf
+from housaku.models import Doc
 from housaku.db import db_connection
 from housaku.utils import console
 
@@ -41,15 +42,24 @@ def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
     return files
 
 
-def read_file(file: Path) -> tuple[str, str, str]:
+def read_file(file: Path) -> Doc:
     mime_type, _ = mimetypes.guess_type(file)
 
-    if mime_type == "text/plain" or mime_type == "text/markdown":
-        return read_txt(file)
-    if mime_type in GENERIC_FILETYPES:
-        return read_generic_doc(file)
+    if mime_type == "text/plain":
+        uri, title, content = read_txt(file)
+    elif mime_type == "text/markdown":
+        uri, title, content = read_txt(file)
+    elif mime_type in GENERIC_FILETYPES:
+        uri, title, content = read_generic_doc(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")
+
+    return Doc(
+        uri=f"{uri}",
+        title=title,
+        doc_type=mime_type,
+        content=content,
+    )
 
 
 def read_txt(file: Path) -> tuple[str, str, str]:
@@ -67,9 +77,8 @@ def read_generic_doc(file: Path) -> tuple[str, str, str]:
 
 
 def index_file(sqlite_url: str, file: Path) -> None:
-    uri = f"{file}"
     try:
-        uri, title, content = read_file(file)
+        doc = read_file(file)
         with db_connection(sqlite_url) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -77,7 +86,7 @@ def index_file(sqlite_url: str, file: Path) -> None:
             INSERT INTO documents (uri, title, type, content)
             VALUES (?, ?, ?, ?)
             """,
-                (uri, title, "file", content),
+                (doc.uri, doc.title, doc.doc_type, doc.content),
             )
         console.print(f"[green][Ok][/] indexed '{file}'.")
     except Exception as e:

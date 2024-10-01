@@ -1,0 +1,196 @@
+/**
+ * Design tokens
+ **/
+:root {
+  /* Colors */
+  --white: #fffbfa;
+  --black: #120500;
+  --primary: #ff7900;
+
+  /* Text size */
+  --text-base: 100%;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+  --text-7xl: 4.5rem;
+  --text-8xl: 6rem;
+  --text-9xl: 8rem;
+
+  /* Gap, margin, padding, ... */
+  --space-base: 0.125rem;
+  --space-xs: calc(var(--space-base) * 2);
+  --space-sm: calc(var(--space-base) * 4);
+  --space-md: calc(var(--space-base) * 8);
+  --space-lg: calc(var(--space-base) * 16);
+  --space-xl: calc(var(--space-base) * 32);
+  --space-2xl: calc(var(--space-base) * 64);
+  --space-3xl: calc(var(--space-base) * 72);
+}
+
+/**
+ * CSS Reset
+ * Extracted from https://piccalil.li/blog/a-more-modern-css-reset/>
+ **/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-block-end: 0;
+}
+
+ul[role="list"],
+ol[role="list"] {
+  list-style: none;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background: var(--white);
+  color: var(--black);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+button,
+input,
+label {
+  line-height: 1.1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+  color: currentColor;
+}
+
+input,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/**
+ * Fonts
+ * From https://vercel.com/font
+ **/
+@font-face {
+  font-family: "Geist";
+  src: url("/static/fonts/Geist[wght].ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/**
+ * Styles
+ **/
+#animation {
+  z-index: -1;
+  position: fixed;
+}
+
+.glass-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 251, 250, 0.24);
+  border: 1px solid rgba(255, 251, 250, 0.24);
+  box-shadow: 0 0px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+}
+
+.search-form {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: 7fr 2fr;
+  left: 50%;
+  padding: var(--space-lg) var(--space-xl);
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 50vw;
+
+  input {
+    border-radius: 12px;
+    border: 1px solid var(--black);
+    font-size: var(--text-xl);
+  }
+
+  input[type="search"] {
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  input[type="submit"] {
+    background: var(--primary);
+    border-radius: 12px;
+    border-color: var(--primary);
+    color: var(--white);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--primary);
+      background: var(--white);
+    }
+  }
+}
+
+.results {
+  height: 90%;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  overflow-y: scroll;
+
+  & > .search-form {
+    position: relative;
+    transform: translate(0, 0);
+    left: 0;
+    top: 0;
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    font-size: var(--text-xl);
+    list-style: none;
+  }
+}

@@ -47,7 +47,7 @@ async def index_feeds(sqlite_url: str, feeds: list[str]) -> None:
                     INSERT INTO documents (uri, title, type, content)
                     VALUES (?, ?, ?, ?)
                     """,
-                        (uri, title, "post", content),
+                        (uri, title, "web", content),
                     )
                     console.print(f"[green][Ok][/] indexed '{uri}'.")
         except Exception as e:

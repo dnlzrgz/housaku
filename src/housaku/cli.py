@@ -9,9 +9,11 @@ from pathlib import Path
 from time import perf_counter
 import rich_click as click
 from rich.table import Table
+from uvicorn import run
+from housaku.web_app import app
 from housaku.db import init_db, db_connection
 from housaku.feeds import index_feeds
-from housaku.files import list_files, index_file
+from housaku.files import GENERIC_FILETYPES, list_files, index_file
 from housaku.settings import Settings, config_file_path
 from housaku.search import search
 from housaku.utils import console
@@ -109,6 +111,21 @@ def index(ctx, include, exclude, max_threads) -> None:
 
 
 @cli.command(
+    name="web",
+    short_help="Launchs web UI.",
+)
+@click.option(
+    "-p",
+    "--port",
+    default=4242,
+    help="Port.",
+)
+@click.pass_context
+def start_web(ctx, port: int) -> None:
+    run(app, host="127.0.0.1", port=port)
+
+
+@cli.command(
     name="search",
     short_help="Search for documents and posts.",
 )
@@ -134,7 +151,11 @@ def search_documents(ctx, query: str, limit: int) -> None:
     settings = ctx.obj["settings"]
     start_time = perf_counter()
 
-    results = search(settings.sqlite_url, query, limit)
+    try:
+        results = search(settings.sqlite_url, query, limit)
+    except Exception as e:
+        console.print(f"[red][Err][/] Something went wrong wit your query: {e}")
+        return
 
     if not results:
         console.print("[yellow]No results found.[/]")
@@ -154,15 +175,32 @@ def search_documents(ctx, query: str, limit: int) -> None:
 
     for uri, title, type in results:
         encoded_uri = urllib.parse.quote(uri, safe=":/")
-        if type == "file":
+        doc_title = title if title else uri
+
+        if type in ["text/plain", "text/markdown"]:
+            table.add_row(
+                ":page_facing_up:",
+                f"[link=file://{encoded_uri}]{doc_title}[/]",
+            )
+        elif type == "application/pdf":
             table.add_row(
                 ":scroll:",
-                f"[link=file://{encoded_uri}]{title}[/]",
+                f"[link=file://{encoded_uri}]{doc_title}[/]",
+            )
+        elif type == "application/epub+zip":
+            table.add_row(
+                ":green_book:",
+                f"[link=file://{encoded_uri}]{doc_title}[/]",
+            )
+        elif type == GENERIC_FILETYPES:
+            table.add_row(
+                ":bookmark_tabs:",
+                f"[link=file://{encoded_uri}]{doc_title}[/]",
             )
         else:
             table.add_row(
                 ":globe_with_meridians:",
-                f"[link={uri}]{title}[/]",
+                f"[link={uri}]{doc_title}[/]",
             )
 
     console.print(table)

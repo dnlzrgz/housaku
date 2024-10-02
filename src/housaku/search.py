@@ -1,7 +1,9 @@
 from housaku.db import db_connection
 
 
-def search(sqlite_url: str, query: str, limit: int = 20) -> list[tuple[str, str, str]]:
+def search(
+    sqlite_url: str, query: str, limit: int = 20
+) -> list[tuple[str, str, str, str]]:
     with db_connection(sqlite_url) as conn:
         cursor = conn.cursor()
         sql_query = """

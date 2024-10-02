@@ -14,13 +14,8 @@ Housaku is a powerful yet simple personal search engine built on top of SQLite's
 - **Parallel File Processing**: Housaku utilizes multi-threading to process files simultaneously, making the indexing process incredibly fast.
 - **Powered by SQLite's FTS5**: Built on the advanced full-text search capabilities of SQLite's FTS5 extension.
 - **Relevant Results with BM25**: Search results are sorted using the BM25 algorithm, ensuring the most relevant results.
-
-## WIP
-
-Housaku is an ongoind project, and several major features are in the pipeline, including:
-
-- A user-friendly Web interface.
-- A TUI for command-line enthusiasts.
+- **Web UI**: Search using your favorite web browser thanks to a friendly and modern Web UI.
+- **TUI for command-line enthusiasts** (Coming soon).
 
 ## Motivation
 
@@ -105,6 +100,17 @@ housaku search --query "search engine"
 
 # By default the limit is 20
 housaku search --query "search engine" --limit 5
+```
+
+### Web
+
+To start the Web UI, simply run:
+
+```bash
+housaku web
+
+# You can also specify the port
+housaku web --port 8787 # by default is 4242
 ```
 
 ## Contributing

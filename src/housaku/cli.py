@@ -173,21 +173,21 @@ def search_documents(ctx, query: str, limit: int) -> None:
     table.add_column("Type", width=5, justify="center")
     table.add_column("Result")
 
-    for uri, title, type in results:
+    for uri, title, doc_type, _ in results:
         encoded_uri = urllib.parse.quote(uri, safe=":/")
         doc_title = title if title else uri
 
-        if type in ["text/plain", "text/markdown"]:
+        if doc_type in ["text/plain", "text/markdown"]:
             table.add_row(
                 ":page_facing_up:",
                 f"[link=file://{encoded_uri}]{doc_title}[/]",
             )
-        elif type == "application/pdf":
+        elif doc_type == "application/pdf":
             table.add_row(
                 ":scroll:",
                 f"[link=file://{encoded_uri}]{doc_title}[/]",
             )
-        elif type == "application/epub+zip":
+        elif doc_type == "application/epub+zip":
             table.add_row(
                 ":green_book:",
                 f"[link=file://{encoded_uri}]{doc_title}[/]",

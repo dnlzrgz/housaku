@@ -14,10 +14,9 @@ init_db(settings.sqlite_url)
 
 app = FastAPI()
 
-base_dir = Path(__file__).resolve().parent.parent.parent
-static_folder = base_dir / "static"
-app.mount("/static", StaticFiles(directory=static_folder), name="static")
-templates = Jinja2Templates(directory="templates")
+base_dir = Path(__file__).resolve().parent
+app.mount("/static", StaticFiles(directory=base_dir / "static"), name="static")
+templates = Jinja2Templates(directory=base_dir / "templates")
 
 
 @app.get("/", response_class=HTMLResponse)

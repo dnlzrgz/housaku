@@ -4,6 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Housaku - {{ query }}</title>
+
+    <link
+      rel="apple-touch-icon"
+      href="{{ url_for('static', path='assets/apple-touch-icon.png') }}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="{{ url_for('static', path='assets/favicon-32x32.png') }}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="{{ url_for('static', path='assets/favicon-16x16.png') }}"
+    />
+    <link
+      rel="icon"
+      href="{{ url_for('static', path='assets/favicon.ico') }}"
+    />
+
     <link
       href="{{ url_for('static', path='/css/styles.css') }}"
       rel="stylesheet"
@@ -13,20 +35,21 @@
   </head>
   <body>
     <main>
-      <div class="results glass-card">
-        <form method="post" action="/search/" class="search-form">
+      <div class="results">
+        <form method="post" action="/search/" class="form results__form">
           <input type="search" name="query" value="{{ query }}" />
           <input type="submit" name="search" value="Search" />
         </form>
 
-        <ul>
+        <ul class="results__list">
           {% for result in results %}
-          <li>
+          <li class="result-card">
             {% if result[2] == "web" %}
             <a href="{{ result[0] }}" target="_blank">{{ result[1] }}</a>
             {% else %}
             <a href="file://{{ result[0] }}" target="_blank">{{ result[1] }}</a>
             {% endif %}
+            <p>{{ result[3]|truncate(280) }}</p>
           </li>
           {% endfor %}
         </ul>

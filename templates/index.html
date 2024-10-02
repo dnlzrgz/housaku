@@ -4,6 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Housaku - Personal Search Engine</title>
+
+    <link
+      rel="apple-touch-icon"
+      href="{{ url_for('static', path='assets/apple-touch-icon.png') }}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="{{ url_for('static', path='assets/favicon-32x32.png') }}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="{{ url_for('static', path='assets/favicon-16x16.png') }}"
+    />
+    <link
+      rel="icon"
+      href="{{ url_for('static', path='assets/favicon.ico') }}"
+    />
+
     <link
       href="{{ url_for('static', path='/css/styles.css') }}"
       rel="stylesheet"
@@ -12,17 +34,17 @@
     <script src="{{ url_for('static', path='/js/main.js') }}" defer></script>
   </head>
   <body>
-    <main class="main">
-        <form method="post" action="/search/" class="search-form glass-card">
-          <input
-            type="search"
-            name="query"
-            placeholder="Start searching"
-            value=""
-            required
-          />
-          <input type="submit" name="search" value="Search" />
-      </div>
+    <main class="index">
+      <form method="post" action="/search/" class="form search-card glass-card">
+        <input
+          type="search"
+          name="query"
+          placeholder="Start searching"
+          value=""
+          required
+        />
+        <input type="submit" name="search" value="Search" />
+      </form>
     </main>
   </body>
 </html>

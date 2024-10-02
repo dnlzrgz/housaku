@@ -173,41 +173,40 @@ def search_documents(ctx, query: str, limit: int) -> None:
     table.add_column("Type", width=5, justify="center")
     table.add_column("Result")
 
-    for uri, title, doc_type, _ in results:
+    for uri, title, doc_type, content in results:
         encoded_uri = urllib.parse.quote(uri, safe=":/")
         doc_title = title if title else uri
 
         if doc_type in ["text/plain", "text/markdown"]:
             table.add_row(
                 ":page_facing_up:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]",
+                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
             )
         elif doc_type == "application/pdf":
             table.add_row(
                 ":scroll:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]",
+                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
             )
         elif doc_type == "application/epub+zip":
             table.add_row(
                 ":green_book:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]",
+                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
             )
-        elif type == GENERIC_FILETYPES:
+        elif doc_type in GENERIC_FILETYPES:
             table.add_row(
                 ":bookmark_tabs:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]",
+                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
             )
         else:
             table.add_row(
                 ":globe_with_meridians:",
-                f"[link={uri}]{doc_title}[/]",
+                f"[link={uri}]{doc_title}[/]\n\n{content}",
             )
 
     console.print(table)
     console.print(
-        f"Search completed in {elapsed_time:.3f}s",
+        f"\nSearch completed in {elapsed_time:.3f}s",
         highlight=False,
-        justify="center",
     )
 
 

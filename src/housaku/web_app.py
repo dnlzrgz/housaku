@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +13,10 @@ settings = Settings()
 init_db(settings.sqlite_url)
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+base_dir = Path(__file__).resolve().parent.parent.parent
+static_folder = base_dir / "static"
+app.mount("/static", StaticFiles(directory=static_folder), name="static")
 templates = Jinja2Templates(directory="templates")
 
 

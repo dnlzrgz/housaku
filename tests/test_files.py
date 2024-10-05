@@ -19,6 +19,14 @@ def test_read_txt():
         assert content
 
 
+def test_read_csv():
+    for test_file in TEST_FILES_DIR.glob("*.csv"):
+        uri, name, content = read_txt(test_file)
+        assert uri == f"{test_file.resolve()}"
+        assert name == test_file.name
+        assert content
+
+
 def test_read_pdf():
     for test_file in TEST_FILES_DIR.glob("*.pdf"):
         uri, name, content = read_generic_doc(test_file)

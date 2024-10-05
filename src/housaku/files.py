@@ -7,7 +7,13 @@ from housaku.models import Doc
 from housaku.db import db_connection
 from housaku.utils import console
 
-GENERIC_FILETYPES = [
+PLAIN_TEXT_FILETYPES = [
+    "text/plain",
+    "text/markdown",
+    "text/csv",
+]
+
+COMPLEX_DOCUMENT_FILETYPES = [
     "application/pdf",
     "application/epub+zip",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -45,11 +51,9 @@ def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
 def read_file(file: Path) -> Doc:
     mime_type, _ = mimetypes.guess_type(file)
 
-    if mime_type == "text/plain":
+    if mime_type in PLAIN_TEXT_FILETYPES:
         uri, title, content = read_txt(file)
-    elif mime_type == "text/markdown":
-        uri, title, content = read_txt(file)
-    elif mime_type in GENERIC_FILETYPES:
+    elif mime_type in COMPLEX_DOCUMENT_FILETYPES:
         uri, title, content = read_generic_doc(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")

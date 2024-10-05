@@ -2,18 +2,23 @@ import asyncio
 import concurrent.futures
 import os
 import subprocess
+import textwrap
 import urllib.parse
 from functools import partial
 from multiprocessing import cpu_count
 from pathlib import Path
 from time import perf_counter
 import rich_click as click
-from rich.table import Table
 from uvicorn import run
 from housaku.web_app import app
 from housaku.db import init_db, db_connection
 from housaku.feeds import index_feeds
-from housaku.files import GENERIC_FILETYPES, list_files, index_file
+from housaku.files import (
+    COMPLEX_DOCUMENT_FILETYPES,
+    PLAIN_TEXT_FILETYPES,
+    list_files,
+    index_file,
+)
 from housaku.settings import Settings, config_file_path
 from housaku.search import search
 from housaku.utils import console
@@ -154,7 +159,7 @@ def search_documents(ctx, query: str, limit: int) -> None:
     try:
         results = search(settings.sqlite_url, query, limit)
     except Exception as e:
-        console.print(f"[red][Err][/] Something went wrong wit your query: {e}")
+        console.print(f"[red][Err][/] Something went wrong with your query: {e}")
         return
 
     if not results:
@@ -164,48 +169,37 @@ def search_documents(ctx, query: str, limit: int) -> None:
     end_time = perf_counter()
     elapsed_time = end_time - start_time
 
-    table = Table(
-        show_header=True,
-        header_style="bold",
-        show_lines=True,
-    )
-
-    table.add_column("Type", width=5, justify="center")
-    table.add_column("Result")
+    FILETYPES_SET = set(PLAIN_TEXT_FILETYPES + COMPLEX_DOCUMENT_FILETYPES)
 
     for uri, title, doc_type, content in results:
         encoded_uri = urllib.parse.quote(uri, safe=":/")
         doc_title = title if title else uri
 
-        if doc_type in ["text/plain", "text/markdown"]:
-            table.add_row(
-                ":page_facing_up:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
-            )
-        elif doc_type == "application/pdf":
-            table.add_row(
-                ":scroll:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
-            )
-        elif doc_type == "application/epub+zip":
-            table.add_row(
-                ":green_book:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
-            )
-        elif doc_type in GENERIC_FILETYPES:
-            table.add_row(
-                ":bookmark_tabs:",
-                f"[link=file://{encoded_uri}]{doc_title}[/]\n\n{content}",
-            )
-        else:
-            table.add_row(
-                ":globe_with_meridians:",
-                f"[link={uri}]{doc_title}[/]\n\n{content}",
-            )
+        truncated_content = textwrap.shorten(content, width=280, placeholder="...")
+        emoji = ":globe_with_meridians:"
+        link = f"[link={uri}]{doc_title}[/]"
+        if doc_type in FILETYPES_SET:
+            link = f"[link=file://{encoded_uri}]{doc_title}[/]"
 
-    console.print(table)
+        if doc_type in PLAIN_TEXT_FILETYPES:
+            emoji = ":page_facing_up:"
+        elif doc_type == "application/pdf":
+            emoji = ":scroll:"
+        elif doc_type == "application/epub+zip":
+            emoji = ":green_book:"
+        elif doc_type in COMPLEX_DOCUMENT_FILETYPES:
+            emoji = ":bookmark_tabs:"
+
+        console.print(
+            f"{emoji} [bold underline]{link}[/]\n{truncated_content}",
+            emoji=True,
+            justify="left",
+            highlight=False,
+            end="\n\n",
+        )
+
     console.print(
-        f"\nSearch completed in {elapsed_time:.3f}s",
+        f"Search completed in {elapsed_time:.3f}s",
         highlight=False,
     )
 

@@ -1,0 +1,89 @@
+$background: #1E1F29;
+$current_line: #44475a;
+$selection: #44475a;
+$foreground: #f8f8f2;
+$comment: #6272a4;
+$cyan: #8be9fd;
+$green: #50fa7b;
+$orange: #ffb86c;
+$pink: #ff79c6;
+$purple: #bd93f9;
+$red: #ff5555;
+$yellow: #f1fa8c;
+
+Screen {
+  background: $background;
+  color: $foreground;
+}
+
+.about {
+  height: auto;
+  layout: horizontal;
+  padding: 1 1;
+
+  .about__title {
+    color: $pink;
+    margin-right: 1;
+    width: auto;
+  }
+
+  .about__version {
+    color: $purple;
+    width: auto;
+  }
+}
+
+.search {
+  layout: grid;
+  grid-size: 2 1;
+  grid-columns: 1fr auto;
+  height: auto;
+
+  .search__input {
+    border: none;
+    height: 1;
+    padding: 0 1;
+  }
+
+  .search__button {
+    background: $pink;
+    border: none;
+    color: $foreground;
+    height: 1;
+    padding: 0 1;
+  }
+}
+
+.results {
+  background: $background;
+  border-title-align: left;
+  border: round $pink;
+  height: 1fr;
+  margin-top: 1;
+  scrollbar-background-active: $selection;
+  scrollbar-background: $selection;
+  scrollbar-color-active: $pink;
+  scrollbar-color-hover: $pink;
+  scrollbar-color: $pink 80%;
+  scrollbar-size-horizontal: 1;
+  scrollbar-size: 1 1;
+}
+
+.result {
+  background: $background;
+  border: none;
+  color: $foreground;
+  padding: 0 1;
+  padding-bottom: 1;
+
+  .result__title {
+    text-style: bold;
+  }
+
+  .result__link {
+    text-style: underline;
+  }
+
+  .result__content {
+  }
+}

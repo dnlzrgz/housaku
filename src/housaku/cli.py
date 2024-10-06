@@ -10,35 +10,35 @@ from pathlib import Path
 from time import perf_counter
 import rich_click as click
 from uvicorn import run
-from housaku.web_app import app
+from housaku.web import app as web_app
+from housaku.tui import app as tui_app
 from housaku.db import init_db, db_connection
 from housaku.feeds import index_feeds
 from housaku.files import (
-    COMPLEX_DOCUMENT_FILETYPES,
-    PLAIN_TEXT_FILETYPES,
     list_files,
     index_file,
+    COMPLEX_DOCUMENT_FILETYPES,
+    PLAIN_TEXT_FILETYPES,
+    FILETYPES_SET,
 )
 from housaku.settings import Settings, config_file_path
 from housaku.search import search
 from housaku.utils import console
 
+settings = Settings()
+init_db(settings.sqlite_url)
 
-@click.group()
-@click.pass_context
-def cli(ctx) -> None:
-    """
-    A powerful personal search engine built on top of SQLite's FTS5.
-    """
 
-    ctx.ensure_object(dict)
-
-    # Load settings
-    settings = Settings()
-    ctx.obj["settings"] = settings
-
-    # Initialize SQLite database
-    init_db(settings.sqlite_url)
+@click.group(
+    help=settings.description,
+    epilog="Check out https://github.com/dnlzrgz/housaku for more details",
+    context_settings=dict(
+        help_option_names=["-h", "--help"],
+    ),
+)
+@click.version_option(version=settings.version)
+def cli() -> None:
+    pass
 
 
 @cli.command(
@@ -70,13 +70,11 @@ def cli(ctx) -> None:
     default=cpu_count() // 2,
     help="Maximum number of threads to use for indexing (default: half of CPU cores).",
 )
-@click.pass_context
-def index(ctx, include, exclude, max_threads) -> None:
+def index(include, exclude, max_threads) -> None:
     """
     Index documents and posts from the specified sources in the
     config.toml file.
     """
-    settings = ctx.obj["settings"]
 
     merged_include = list(
         set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
@@ -117,7 +115,7 @@ def index(ctx, include, exclude, max_threads) -> None:
 
 @cli.command(
     name="web",
-    short_help="Launchs web UI.",
+    short_help="Launchs Web UI.",
 )
 @click.option(
     "-p",
@@ -125,9 +123,16 @@ def index(ctx, include, exclude, max_threads) -> None:
     default=4242,
     help="Port.",
 )
-@click.pass_context
-def start_web(ctx, port: int) -> None:
-    run(app, host="127.0.0.1", port=port)
+def start_web(port: int) -> None:
+    run(web_app, host="127.0.0.1", port=port)
+
+
+@cli.command(
+    name="tui",
+    short_help="Starts Textual TUI.",
+)
+def start_tui() -> None:
+    tui_app(settings).run()
 
 
 @cli.command(
@@ -147,13 +152,11 @@ def start_web(ctx, port: int) -> None:
     default=20,
     help="Limit the number of documents returned.",
 )
-@click.pass_context
-def search_documents(ctx, query: str, limit: int) -> None:
+def search_documents(query: str, limit: int) -> None:
     """
     Search for documents and posts based on the provided query.
     """
 
-    settings = ctx.obj["settings"]
     start_time = perf_counter()
 
     try:
@@ -168,8 +171,6 @@ def search_documents(ctx, query: str, limit: int) -> None:
 
     end_time = perf_counter()
     elapsed_time = end_time - start_time
-
-    FILETYPES_SET = set(PLAIN_TEXT_FILETYPES + COMPLEX_DOCUMENT_FILETYPES)
 
     for uri, title, doc_type, content in results:
         encoded_uri = urllib.parse.quote(uri, safe=":/")
@@ -227,12 +228,10 @@ def config() -> None:
     name="vacuum",
     help="Reclaim unused spaced in the database.",
 )
-@click.pass_context
-def vacuum(ctx) -> None:
+def vacuum() -> None:
     """
     Reclaims unused space in the database.
     """
-    settings = ctx.obj["settings"]
 
     try:
         with db_connection(settings.sqlite_url) as conn:

@@ -7,19 +7,21 @@ from housaku.models import Doc
 from housaku.db import db_connection
 from housaku.utils import console
 
-PLAIN_TEXT_FILETYPES = [
+PLAIN_TEXT_FILETYPES = {
     "text/plain",
     "text/markdown",
     "text/csv",
-]
+}
 
-COMPLEX_DOCUMENT_FILETYPES = [
+COMPLEX_DOCUMENT_FILETYPES = {
     "application/pdf",
     "application/epub+zip",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-]
+}
+
+FILETYPES_SET = PLAIN_TEXT_FILETYPES.union(COMPLEX_DOCUMENT_FILETYPES)
 
 pymupdf.JM_mupdf_show_errors = 0
 

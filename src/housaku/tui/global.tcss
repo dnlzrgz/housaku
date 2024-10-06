@@ -39,10 +39,21 @@ Screen {
   grid-columns: 1fr auto;
   height: auto;
 
+  
   .search__input {
     border: none;
     height: 1;
     padding: 0 1;
+
+    &.-invalid {
+      padding-left: 0;
+      border-left: outer $red;
+    }
+
+    &:focus {
+      padding-left: 0;
+      border-left: outer $pink;
+    }
   }
 
   .search__button {
@@ -51,6 +62,10 @@ Screen {
     color: $foreground;
     height: 1;
     padding: 0 1;
+
+    &:disabled {
+      opacity: 60%;
+    }
   }
 }
 
@@ -85,5 +100,39 @@ Screen {
   }
 
   .result__content {
+  }
+}
+
+Footer {
+  background: transparent;
+  border: none;
+  height: 2;
+  padding: 0 1;
+
+  & FooterKey {
+    background: transparent;
+    color: $foreground 85%;
+
+    .footer-key--key {
+      background: transparent;
+      color: $pink;
+    }
+  }
+}
+
+Toast {
+  color: $foreground;
+  background: $current_line;
+
+  &.-information {
+    border-left: outer $green;
+  }
+
+  &.-warning {
+    border-left: outer $orange;
+  }
+
+  &.-error {
+    border-left: outer $red;
   }
 }

@@ -7,7 +7,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Container
 from textual.reactive import reactive
 from textual.validation import ValidationResult, Validator
-from textual.widgets import Button, Input, ListItem, ListView, Static
+from textual.widgets import Button, Footer, Input, ListItem, ListView, Static
 from housaku.db import init_db
 from housaku.files import FILETYPES_SET
 from housaku.settings import Settings
@@ -29,7 +29,7 @@ class HousakuApp(App):
     ENABLE_COMMAND_PALETTE = False
 
     BINDINGS = [
-        Binding("ctrl+q", "quit", "Quit"),
+        Binding("ctrl+q", "quit", "Quit", priority=True),
     ]
 
     search_query: reactive[str] = reactive("")
@@ -66,6 +66,7 @@ class HousakuApp(App):
             classes="search",
         )
         yield ListView(classes="results")
+        yield Footer(classes="footer")
 
     def on_mount(self) -> None:
         self.input_field = self.query_one(Input)

@@ -5,11 +5,22 @@ from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Container
+from textual.reactive import reactive
+from textual.validation import ValidationResult, Validator
 from textual.widgets import Button, Input, ListItem, ListView, Static
 from housaku.db import init_db
 from housaku.files import FILETYPES_SET
 from housaku.settings import Settings
 from housaku.search import search
+
+
+class SearchInputValidator(Validator):
+    def validate(self, value: str) -> ValidationResult:
+        return (
+            self.success()
+            if value
+            else self.failure("Search query cannot be an empty string.")
+        )
 
 
 class HousakuApp(App):
@@ -18,8 +29,10 @@ class HousakuApp(App):
     ENABLE_COMMAND_PALETTE = False
 
     BINDINGS = [
-        Binding("q", "quit", "Quit"),
+        Binding("ctrl+q", "quit", "Quit"),
     ]
+
+    search_query: reactive[str] = reactive("")
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -27,24 +40,61 @@ class HousakuApp(App):
 
     def compose(self) -> ComposeResult:
         yield Container(
-            Static(f"{self.settings.name}", classes="about__title"),
-            Static(f"{self.settings.version}", classes="about__version"),
+            Static(
+                f"{self.settings.name}",
+                classes="about__title",
+            ),
+            Static(
+                f"{self.settings.version}",
+                classes="about__version",
+            ),
             classes="about",
         )
         yield Horizontal(
-            Input(placeholder="Search", type="text", classes="search__input"),
-            Button(label="Search", classes="search__button"),
+            Input(
+                placeholder="Search",
+                type="text",
+                classes="search__input",
+                validate_on=["submitted"],
+                validators=[SearchInputValidator()],
+            ),
+            Button(
+                label="Search",
+                classes="search__button",
+                disabled=True,
+            ),
             classes="search",
         )
         yield ListView(classes="results")
 
     def on_mount(self) -> None:
+        self.input_field = self.query_one(Input)
+        self.search_button = self.query_one(Button)
+
         self.results = self.query_one(ListView)
         self.results.border_title = "results"
 
     @on(Input.Submitted)
-    def handle_input(self, message: Input.Submitted) -> None:
-        self.search_documents(message.value)
+    @on(Button.Pressed, selector=".search__button")
+    def handle_submit(self, _: Input.Submitted | Button.Pressed) -> None:
+        if not self.input_field.is_valid:
+            self.notify(
+                "Search query cannot be empty.",
+                severity="error",
+            )
+            return
+
+        self.search_documents(self.search_query)
+
+    @on(Input.Changed)
+    def handle_change_input(self, event: Input.Changed) -> None:
+        self.search_query = event.value
+
+    def watch_search_query(self, value: str) -> None:
+        if value:
+            self.search_button.disabled = False
+        else:
+            self.search_button.disabled = True
 
     def search_documents(self, query: str) -> None:
         self.results.loading = True
@@ -56,7 +106,7 @@ class HousakuApp(App):
             results = search(self.settings.sqlite_url, query, 10)
         except Exception as e:
             self.notify(
-                f"[red][Err][/] Something went wrong with your query: {e}",
+                f"Something went wrong with your query: {e}.",
                 severity="error",
             )
             self.results.loading = False
@@ -65,7 +115,10 @@ class HousakuApp(App):
         end_time = perf_counter()
 
         if not results:
-            self.notify("No results found.", severity="warning")
+            self.notify(
+                "No results found.",
+                severity="warning",
+            )
             self.results.loading = False
             return
 

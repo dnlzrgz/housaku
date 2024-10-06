@@ -1,18 +1,18 @@
+import shutil
+from importlib.metadata import version
 from typing import Type, Tuple
 from pathlib import Path
-import shutil
 import click
 from pydantic import BaseModel, DirectoryPath, Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
-    PyprojectTomlConfigSettingsSource,
     SettingsConfigDict,
     TomlConfigSettingsSource,
 )
 
 app_name = "housaku"
-app_dir = Path(click.get_app_dir(app_name="housaku"))
+app_dir = Path(click.get_app_dir(app_name=app_name))
 config_file_path = app_dir / "config.toml"
 template_file_path = Path(__file__).parent / "config_template.toml"
 
@@ -28,9 +28,10 @@ class FeedSettings(BaseModel):
 
 class Settings(BaseSettings):
     name: str = app_name
-    description: str = ""
-    license: str = "MIT"
-    version: str = "v0.1.0"
+    description: str = (
+        "A powerful personal search engine built on top of SQLite's FTS5."
+    )
+    version: str = version("housaku")
 
     sqlite_url: str = f"{app_dir / 'db.sqlite3'}"
     files: FileSettings = Field(default_factory=FileSettings)
@@ -38,7 +39,6 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         toml_file=config_file_path,
-        pyproject_toml_table_header=("project",),
         extra="ignore",
     )
 
@@ -59,7 +59,6 @@ class Settings(BaseSettings):
         return (
             init_settings,
             TomlConfigSettingsSource(settings_cls),
-            PyprojectTomlConfigSettingsSource(settings_cls),
             env_settings,
             dotenv_settings,
             file_secret_settings,

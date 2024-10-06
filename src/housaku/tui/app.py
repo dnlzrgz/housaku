@@ -27,8 +27,8 @@ class HousakuApp(App):
 
     def compose(self) -> ComposeResult:
         yield Container(
-            Static(f"{settings.name}", classes="about__title"),
-            Static(f"{settings.version}", classes="about__version"),
+            Static(f"{self.settings.name}", classes="about__title"),
+            Static(f"{self.settings.version}", classes="about__version"),
             classes="about",
         )
         yield Horizontal(

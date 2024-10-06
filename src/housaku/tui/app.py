@@ -53,7 +53,7 @@ class HousakuApp(App):
         start_time = perf_counter()
 
         try:
-            results = search(settings.sqlite_url, query, 10)
+            results = search(self.settings.sqlite_url, query, 10)
         except Exception as e:
             self.notify(
                 f"[red][Err][/] Something went wrong with your query: {e}",

@@ -2,20 +2,27 @@
 
 Housaku is a powerful yet simple personal search engine built on top of SQLite's FTS5.
 
+![TUI screenshot](./.github/tui-screenshot.svg)
+
 ## Features
 
 - **Support for multiple file formats**: Index files in a variety of formats, including:
-  - Plain text tiles.
+  - Plain text files.
   - Markdown.
   - PDF.
   - EPUB.
-  - DOCX.
+  - DOCX, XLSX and PPTX.
+  - CSV.
 - **Basic Web Scraping**: In addition to personal files, you can also index posts from your favorite RSS/Atom feeds.
 - **Parallel File Processing**: Housaku utilizes multi-threading to process files simultaneously, making the indexing process incredibly fast.
 - **Powered by SQLite's FTS5**: Built on the advanced full-text search capabilities of SQLite's FTS5 extension.
 - **Relevant Results with BM25**: Search results are sorted using the BM25 algorithm, ensuring the most relevant results.
 - **Web UI**: Search using your favorite web browser thanks to a friendly and modern Web UI.
-- **TUI for command-line enthusiasts** (Coming soon).
+- **TUI**: A simple but easy-to-use TUI made with Textual that enhances the command-line experience.
+
+## WIP
+
+Housaku is in active development, and some aspects need further refinement before I can consider the project "stable." This includes the TUI, which requires some polishing, and the Web UI, which needs significant improvements.
 
 ## Motivation
 

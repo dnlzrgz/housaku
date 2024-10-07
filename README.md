@@ -109,6 +109,15 @@ housaku search --query "search engine"
 housaku search --query "search engine" --limit 5
 ```
 
+### TUI
+
+You can also search using the TUI. To start using it just run:
+
+```bash
+housaku tui
+
+```
+
 ### Web
 
 To start the Web UI, simply run:

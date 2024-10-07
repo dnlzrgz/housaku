@@ -135,17 +135,17 @@ class HousakuApp(App):
 
             self.results.mount(
                 ListItem(
-                    Container(
-                        Static(doc_title, classes="result__title"),
-                        Static(link, classes="result__link"),
-                        Static(truncated_content, classes="result__content"),
-                        classes="result",
-                    ),
+                    Static(doc_title, classes="result__title"),
+                    Static(link, classes="result__link"),
+                    Static(truncated_content, classes="result__content"),
+                    classes="result",
                 )
             )
 
         elapsed_time = end_time - start_time
         self.results.loading = False
+        self.results.focus()
+        self.results.index = 0
         self.results.border_subtitle = f"in {elapsed_time:.3f}s"
 
 

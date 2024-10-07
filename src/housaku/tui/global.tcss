@@ -39,7 +39,6 @@ Screen {
   grid-columns: 1fr auto;
   height: auto;
 
-  
   .search__input {
     border: none;
     height: 1;
@@ -72,7 +71,7 @@ Screen {
 .results {
   background: $background;
   border-title-align: left;
-  border: round $pink;
+  border: round $pink 80%;
   height: 1fr;
   margin-top: 1;
   scrollbar-background-active: $selection;
@@ -82,14 +81,26 @@ Screen {
   scrollbar-color: $pink 80%;
   scrollbar-size-horizontal: 1;
   scrollbar-size: 1 1;
+
+  &:focus {
+    border: round $pink;
+  }
 }
 
 .result {
   background: $background;
   border: none;
   color: $foreground;
-  padding: 0 1;
-  padding-bottom: 1;
+  padding: 1;
+
+  &.--highlight {
+    padding-left: 0;
+    border-left: outer $pink;
+
+    .result__title {
+      color: $pink;
+    }
+  }
 
   .result__title {
     text-style: bold;
@@ -97,9 +108,6 @@ Screen {
 
   .result__link {
     text-style: underline;
-  }
-
-  .result__content {
   }
 }
 

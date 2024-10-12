@@ -46,7 +46,7 @@ pipx install housaku
 ### Via `uv`
 
 ```bash
-uv tool add housaku
+uv tool install housaku
 
 # Or
 

@@ -34,20 +34,28 @@ async def index_feeds(sqlite_url: str, feeds: list[str]) -> None:
         try:
             entries = await fetch_feed(client, feed_url)
             for entry in entries:
-                entry_link = entry.link
-                uri = f"{entry_link}"
-
-                content = await fetch_post(client, entry_link)
-                title = entry.get("title", entry_link)
-
                 with db_connection(sqlite_url) as conn:
                     cursor = conn.cursor()
+                    entry_link = entry.link
+                    uri = f"{entry_link}"
+
+                    cursor.execute(
+                        "SELECT EXISTS(SELECT 1 FROM documents WHERE uri = ?)",
+                        (uri,),
+                    )
+                    if cursor.fetchone()[0]:
+                        console.print(f"[yellow][Skip][/] already indexed '{uri}'.")
+                        return
+
+                    body = await fetch_post(client, entry_link)
+                    title = entry.get("title", entry_link)
+
                     cursor.execute(
                         """
-                    INSERT INTO documents (uri, title, type, content)
+                    INSERT INTO documents (uri, title, type, body)
                     VALUES (?, ?, ?, ?)
                     """,
-                        (uri, title, "web", content),
+                        (uri, title, "web", body),
                     )
                     console.print(f"[green][Ok][/] indexed '{uri}'.")
         except Exception as e:

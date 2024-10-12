@@ -12,7 +12,7 @@ import rich_click as click
 from uvicorn import run
 from housaku.web import app as web_app
 from housaku.tui import app as tui_app
-from housaku.db import init_db, db_connection
+from housaku.db import init_db, db_connection, purge_db, rebuilt_fts_table
 from housaku.feeds import index_feeds
 from housaku.files import (
     list_files,
@@ -70,31 +70,39 @@ def cli() -> None:
     default=cpu_count() // 2,
     help="Maximum number of threads to use for indexing (default: half of CPU cores).",
 )
-def index(include, exclude, max_threads) -> None:
+@click.option(
+    "--purge",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Purge all data from the database before indexing.",
+)
+def index(include, exclude, max_threads, purge) -> None:
     """
     Index documents and posts from the specified sources in the
     config.toml file.
     """
-
-    merged_include = list(
-        set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
-    )
-    merged_exclude = list(set(settings.files.exclude) | set(exclude))
-    urls = settings.feeds.urls
-
-    partial_function = partial(index_file, settings.sqlite_url)
-
     with console.status(
         "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
-        try:
-            with db_connection(settings.sqlite_url) as conn:
-                conn.execute("DELETE FROM documents")
-                console.print("[green][Ok][/] Cleaned database.")
-        except Exception as e:
-            console.print(f"[red][Err][/] Failed to clear database: {e}")
-            return
+        merged_include = list(
+            set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
+        )
+        merged_exclude = list(set(settings.files.exclude) | set(exclude))
+        urls = settings.feeds.urls
+
+        partial_function = partial(index_file, settings.sqlite_url)
+
+        if purge:
+            try:
+                status.update("[green]Purging previous data...")
+                purge_db(settings.sqlite_url)
+                init_db(settings.sqlite_url)
+            except Exception as e:
+                console.print(
+                    f"[red][Err][/] something went wrong while purging database: {e}"
+                )
 
         for dir in merged_include:
             status.update(
@@ -111,6 +119,14 @@ def index(include, exclude, max_threads) -> None:
             "[green]Indexing feeds and posts... Please wait, this may take a moment."
         )
         asyncio.run(index_feeds(settings.sqlite_url, urls))
+
+        try:
+            status.update("[green]Wrapping things up...")
+            rebuilt_fts_table(settings.sqlite_url)
+        except Exception as e:
+            console.print(
+                f"[red][Err][/] something went wrong while rebuilding the fts5 table: {e}"
+            )
 
 
 @cli.command(

@@ -6,12 +6,32 @@ def init_db(sqlite_url: str) -> None:
     conn = sqlite3.connect(sqlite_url)
     cursor = conn.cursor()
 
+    # Creates the documents table.
     cursor.execute("""
-    CREATE VIRTUAL TABLE IF NOT EXISTS documents USING fts5 (
-        uri, title, type, content, tokenize="porter unicode61"
+    CREATE TABLE IF NOT EXISTS documents (
+        uri TEXT UNIQUE NOT NULL,
+        title TEXT,
+        type TEXT NOT NULL,
+        body TEXT NOT NULL
     );
     """)
 
+    # Adds index on the uri column
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_uri ON documents(uri)")
+
+    # Creates virtual FTS5 table for full-text search
+    cursor.execute("""
+    CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5 (
+        uri,
+        title,
+        type,
+        body,
+        content=documents,
+        tokenize="porter unicode61"
+    );
+    """)
+
+    # Settings
     cursor.execute("PRAGMA journal_mode = WAL;")
     cursor.execute("PRAGMA foreign_keys = ON;")
     cursor.execute("PRAGMA synchronous = NORMAL;")
@@ -20,6 +40,30 @@ def init_db(sqlite_url: str) -> None:
     cursor.execute("PRAGMA cache_size = 2000;")
 
     cursor.execute("PRAGMA transaction_mode = IMMEDIATE;")
+
+    conn.commit()
+    conn.close()
+
+
+def purge_db(sqlite_url: str) -> None:
+    conn = sqlite3.connect(sqlite_url)
+    cursor = conn.cursor()
+
+    cursor.execute("DROP TABLE IF EXISTS documents;")
+    cursor.execute("DROP TABLE IF EXISTS documents_fts;")
+    cursor.execute("DROP INDEX IF EXISTS idx_uri;")
+
+    cursor.execute("VACUUM;")
+
+    conn.commit()
+    conn.close()
+
+
+def rebuilt_fts_table(sqlite_url: str) -> None:
+    conn = sqlite3.connect(sqlite_url)
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO documents_fts(documents_fts) VALUES('rebuild');")
 
     conn.commit()
     conn.close()

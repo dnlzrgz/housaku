@@ -13,10 +13,11 @@ Housaku is a powerful yet simple personal search engine built on top of SQLite's
   - EPUB.
   - DOCX, XLSX and PPTX.
   - CSV.
-- **Basic Web Scraping**: In addition to personal files, you can also index posts from your favorite RSS/Atom feeds.
-- **Parallel File Processing**: Housaku utilizes multi-threading to process files simultaneously, making the indexing process incredibly fast.
+- **Basic Web scraping**: In addition to personal files, you can also index posts from your favorite RSS/Atom feeds.
+- **Parallel file processing**: Housaku utilizes multi-threading to process files simultaneously, making the indexing process incredibly fast.
 - **Powered by SQLite's FTS5**: Built on the advanced full-text search capabilities of SQLite's FTS5 extension.
-- **Relevant Results with BM25**: Search results are sorted using the BM25 algorithm, ensuring the most relevant results.
+- **Incremental indexing**: Only new documents are indexed.
+- **Relevant sesults with BM25**: Search results are sorted using the BM25 algorithm, ensuring the most relevant results.
 - **Web UI**: Search using your favorite web browser thanks to a friendly and modern Web UI.
 - **TUI**: A simple but easy-to-use TUI made with Textual that enhances the command-line experience.
 

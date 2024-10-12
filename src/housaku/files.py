@@ -54,9 +54,9 @@ def read_file(file: Path) -> Doc:
     mime_type, _ = mimetypes.guess_type(file)
 
     if mime_type in PLAIN_TEXT_FILETYPES:
-        uri, title, content = read_txt(file)
+        uri, title, body = read_txt(file)
     elif mime_type in COMPLEX_DOCUMENT_FILETYPES:
-        uri, title, content = read_generic_doc(file)
+        uri, title, body = read_generic_doc(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")
 
@@ -64,7 +64,7 @@ def read_file(file: Path) -> Doc:
         uri=f"{uri}",
         title=title,
         doc_type=mime_type,
-        content=content,
+        body=body,
     )
 
 
@@ -74,25 +74,34 @@ def read_txt(file: Path) -> tuple[str, str, str]:
 
 
 def read_generic_doc(file: Path) -> tuple[str, str, str]:
-    content = ""
+    body = ""
     with pymupdf.open(file) as doc:
         for page in doc:
-            content += page.get_text()
+            body += page.get_text()
 
-    return f"{file.resolve()}", file.name, content
+    return f"{file.resolve()}", file.name, body
 
 
 def index_file(sqlite_url: str, file: Path) -> None:
     try:
-        doc = read_file(file)
         with db_connection(sqlite_url) as conn:
             cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM documents WHERE uri = ?)",
+                (f"{file.resolve()}",),
+            )
+            if cursor.fetchone()[0]:
+                console.print(f"[yellow][Skip][/] already indexed '{file}'.")
+                return
+
+            doc = read_file(file)
             cursor.execute(
                 """
-            INSERT INTO documents (uri, title, type, content)
+            INSERT INTO documents (uri, title, type, body)
             VALUES (?, ?, ?, ?)
             """,
-                (doc.uri, doc.title, doc.doc_type, doc.content),
+                (doc.uri, doc.title, doc.doc_type, doc.body),
             )
         console.print(f"[green][Ok][/] indexed '{file}'.")
     except Exception as e:

@@ -23,6 +23,12 @@ class SearchInputValidator(Validator):
         )
 
 
+class ItemMetadata(Static):
+    def __init__(self, link: str, *args, **kwargs) -> None:
+        self.link = link
+        super().__init__(*args, **kwargs)
+
+
 class HousakuApp(App):
     TITLE = "housaku"
     CSS_PATH = "global.tcss"
@@ -88,8 +94,13 @@ class HousakuApp(App):
         self.search_documents(self.search_query)
 
     @on(Input.Changed)
-    def handle_change_input(self, event: Input.Changed) -> None:
+    def handle_input_update(self, event: Input.Changed) -> None:
         self.search_query = event.value
+
+    @on(ListView.Selected)
+    def open_search_result(self, event: ListView.Selected) -> None:
+        link = event.item.query_exactly_one(ItemMetadata).link
+        self.open_url(link)
 
     def watch_search_query(self, value: str) -> None:
         if value:
@@ -138,6 +149,7 @@ class HousakuApp(App):
                     Static(doc_title, classes="result__title"),
                     Static(link, classes="result__link"),
                     Static(truncated_content, classes="result__content"),
+                    ItemMetadata(encoded_uri),
                     classes="result",
                 )
             )

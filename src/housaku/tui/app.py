@@ -6,8 +6,16 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Container
 from textual.reactive import reactive
-from textual.validation import ValidationResult, Validator
-from textual.widgets import Button, Footer, Input, ListItem, ListView, Static
+from textual.validation import Number, ValidationResult, Validator
+from textual.widgets import (
+    Button,
+    Footer,
+    Input,
+    Label,
+    ListItem,
+    ListView,
+    Static,
+)
 from housaku.db import init_db
 from housaku.files import FILETYPES_SET
 from housaku.settings import Settings
@@ -39,6 +47,7 @@ class HousakuApp(App):
     ]
 
     search_query: reactive[str] = reactive("")
+    max_results: reactive[int] = reactive(10)
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -57,17 +66,31 @@ class HousakuApp(App):
             classes="about",
         )
         yield Horizontal(
-            Input(
-                placeholder="Search",
-                type="text",
-                classes="search__input",
-                validate_on=["submitted"],
-                validators=[SearchInputValidator()],
+            Container(
+                Label("query", classes="query__label"),
+                Input(
+                    placeholder="Search",
+                    type="text",
+                    classes="query__input",
+                    validate_on=["submitted"],
+                    validators=[SearchInputValidator()],
+                ),
+                classes="query",
+            ),
+            Container(
+                Label("#", classes="nresults__label"),
+                Input(
+                    type="integer",
+                    value=f"{self.max_results}",
+                    placeholder="10",
+                    validators=Number(minimum=1),
+                    classes="nresults__input",
+                ),
+                classes="nresults",
             ),
             Button(
                 label="Search",
-                classes="search__button",
-                disabled=True,
+                classes="submit",
             ),
             classes="search",
         )
@@ -75,47 +98,51 @@ class HousakuApp(App):
         yield Footer(classes="footer")
 
     def on_mount(self) -> None:
-        self.input_field = self.query_one(Input)
-        self.search_button = self.query_one(Button)
+        self.query_input = self.query_one(".query__input")
+        self.submit_button = self.query_one(".submit")
 
-        self.results = self.query_one(ListView)
+        self.results = self.query_one(".results")
         self.results.border_title = "results"
 
-    @on(Input.Submitted)
-    @on(Button.Pressed, selector=".search__button")
-    def handle_submit(self, _: Input.Submitted | Button.Pressed) -> None:
-        if not self.input_field.is_valid:
+        self.query_input.focus()
+
+    @on(Input.Submitted, selector=".query__input")
+    @on(Button.Pressed, selector=".submit")
+    async def handle_submit(self, _: Input.Submitted | Button.Pressed) -> None:
+        if not self.query_input.is_valid:
             self.notify(
                 "Search query cannot be empty.",
                 severity="error",
             )
             return
 
-        self.search_documents(self.search_query)
+        await self._search()
 
-    @on(Input.Changed)
-    def handle_input_update(self, event: Input.Changed) -> None:
+    @on(Input.Changed, selector=".query__input")
+    def update_search_query(self, event: Input.Changed) -> None:
         self.search_query = event.value
+
+    @on(Input.Changed, selector=".nresults__input")
+    def update_max_results(self, event: Input.Changed) -> None:
+        try:
+            self.max_results = int(event.value)
+        except Exception:
+            self.max_results = 10
 
     @on(ListView.Selected)
     def open_search_result(self, event: ListView.Selected) -> None:
         link = event.item.query_exactly_one(ItemMetadata).link
         self.open_url(link)
 
-    def watch_search_query(self, value: str) -> None:
-        if value:
-            self.search_button.disabled = False
-        else:
-            self.search_button.disabled = True
-
-    def search_documents(self, query: str) -> None:
-        self.results.loading = True
+    async def _search(self) -> None:
         self.results.clear()
-
+        self.results.loading = True
         start_time = perf_counter()
 
         try:
-            results = search(self.settings.sqlite_url, query, 10)
+            results = search(
+                self.settings.sqlite_url, self.search_query, self.max_results
+            )
         except Exception as e:
             self.notify(
                 f"Something went wrong with your query: {e}.",
@@ -158,7 +185,9 @@ class HousakuApp(App):
         self.results.loading = False
         self.results.focus()
         self.results.index = 0
-        self.results.border_subtitle = f"in {elapsed_time:.3f}s"
+        self.results.border_subtitle = (
+            f"{self.max_results} results in {elapsed_time:.3f}s"
+        )
 
 
 if __name__ == "__main__":

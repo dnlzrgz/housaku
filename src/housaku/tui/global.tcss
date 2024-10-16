@@ -14,6 +14,13 @@ $yellow: #f1fa8c;
 Screen {
   background: $background;
   color: $foreground;
+  scrollbar-background-active: $selection;
+  scrollbar-background: $selection;
+  scrollbar-color-active: $pink;
+  scrollbar-color-hover: $pink;
+  scrollbar-color: $pink 80%;
+  scrollbar-size-horizontal: 1;
+  scrollbar-size: 1 1;
 }
 
 .about {
@@ -34,12 +41,26 @@ Screen {
 }
 
 .search {
+  grid-columns: 1fr 12 12;
+  grid-size: 3 1;
+  height: 1;
   layout: grid;
-  grid-size: 2 1;
-  grid-columns: 1fr auto;
-  height: auto;
+  padding: 0 1;
+  width: 100%;
 
-  .search__input {
+  .query,
+  .nresults {
+    layout: horizontal;
+  }
+
+  Label {
+    background: $pink;
+    border: none;
+    height: 1;
+    padding: 0 1;
+  }
+
+  Input {
     border: none;
     height: 1;
     padding: 0 1;
@@ -50,21 +71,19 @@ Screen {
     }
 
     &:focus {
+      background: $background;
+      color: $foreground;
       padding-left: 0;
       border-left: outer $pink;
     }
   }
 
-  .search__button {
+  .submit {
     background: $pink;
     border: none;
     color: $foreground;
     height: 1;
     padding: 0 1;
-
-    &:disabled {
-      opacity: 60%;
-    }
   }
 }
 
@@ -73,6 +92,7 @@ Screen {
   border-title-align: left;
   border: round $pink 80%;
   height: 1fr;
+  margin: 0 1;
   margin-top: 1;
   scrollbar-background-active: $selection;
   scrollbar-background: $selection;
@@ -85,6 +105,11 @@ Screen {
   &:focus {
     border: round $pink;
   }
+}
+
+LoadingIndicator {
+  color: $pink;
+  background: $background;
 }
 
 .result {

@@ -165,7 +165,7 @@ def start_tui() -> None:
     "-l",
     "--limit",
     type=int,
-    default=20,
+    default=10,
     help="Limit the number of documents returned.",
 )
 def search_documents(query: str, limit: int) -> None:

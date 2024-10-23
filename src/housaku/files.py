@@ -26,7 +26,7 @@ FILETYPES_SET = PLAIN_TEXT_FILETYPES.union(COMPLEX_DOCUMENT_FILETYPES)
 pymupdf.JM_mupdf_show_errors = 0
 
 
-def list_files(root: Path, exclude: list[str] = []) -> list[Path]:
+def list_files(root: Path, exclude: set[str] = set()) -> list[Path]:
     exclude_set = set(exclude)
     pending_dirs = deque([root])
     files = []

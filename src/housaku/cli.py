@@ -86,14 +86,6 @@ def index(include, exclude, max_threads, purge) -> None:
         "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
-        merged_include = list(
-            set(Path(d) for d in settings.files.include) | {Path(d) for d in include}
-        )
-        merged_exclude = list(set(settings.files.exclude) | set(exclude))
-        urls = settings.feeds.urls
-
-        partial_function = partial(index_file, settings.sqlite_url)
-
         if purge:
             try:
                 status.update("[green]Purging previous data...")
@@ -103,6 +95,12 @@ def index(include, exclude, max_threads, purge) -> None:
                 console.print(
                     f"[red][Err][/] something went wrong while purging database: {e}"
                 )
+
+        merged_include = {Path(d) for d in (settings.files.include + list(include))}
+        merged_exclude = set(settings.files.exclude) | set(exclude)
+        urls = settings.feeds.urls
+
+        partial_function = partial(index_file, settings.sqlite_url)
 
         for dir in merged_include:
             status.update(

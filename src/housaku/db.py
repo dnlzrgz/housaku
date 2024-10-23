@@ -23,8 +23,6 @@ def init_db(sqlite_url: str) -> None:
     cursor.execute("""
     CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5 (
         uri,
-        title,
-        type,
         body,
         content=documents,
         tokenize="porter unicode61"

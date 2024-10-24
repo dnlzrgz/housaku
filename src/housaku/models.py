@@ -3,10 +3,10 @@ class Doc:
         self,
         uri: str,
         title: str,
-        doc_type: str,
         body: str,
+        doc_type: str = "",
     ) -> None:
         self.uri = uri
         self.title = title
-        self.doc_type = doc_type
         self.body = body
+        self.doc_type = doc_type

@@ -12,7 +12,8 @@ def init_db(sqlite_url: str) -> None:
         uri TEXT UNIQUE NOT NULL,
         title TEXT,
         type TEXT NOT NULL,
-        body TEXT NOT NULL
+        body TEXT NOT NULL,
+        hash TEXT
     );
     """)
 

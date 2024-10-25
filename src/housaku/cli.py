@@ -12,7 +12,7 @@ import rich_click as click
 from uvicorn import run
 from housaku.web import app as web_app
 from housaku.tui import app as tui_app
-from housaku.db import init_db, db_connection, purge_db, rebuilt_fts_table
+from housaku.db import init_db, with_db, clear_db, rebuild_fts
 from housaku.feeds import index_feeds
 from housaku.files import (
     list_files,
@@ -89,7 +89,7 @@ def index(include, exclude, max_threads, purge) -> None:
         if purge:
             try:
                 status.update("[green]Purging previous data...")
-                purge_db(settings.sqlite_url)
+                clear_db(settings.sqlite_url)
                 init_db(settings.sqlite_url)
             except Exception as e:
                 console.print(
@@ -120,7 +120,7 @@ def index(include, exclude, max_threads, purge) -> None:
 
         try:
             status.update("[green]Wrapping things up...")
-            rebuilt_fts_table(settings.sqlite_url)
+            rebuild_fts(settings.sqlite_url)
         except Exception as e:
             console.print(
                 f"[red][Err][/] something went wrong while rebuilding the fts5 table: {e}"
@@ -248,7 +248,7 @@ def vacuum() -> None:
     """
 
     try:
-        with db_connection(settings.sqlite_url) as conn:
+        with with_db(settings.sqlite_url) as conn:
             conn.execute("VACUUM")
             console.print("[green][Ok][/] unused space has been reclaimed!")
     except Exception as e:

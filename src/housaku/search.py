@@ -1,4 +1,4 @@
-from housaku.db import db_connection
+from housaku.db import with_db
 
 
 def search(
@@ -6,7 +6,7 @@ def search(
     query: str,
     limit: int = 10,
 ) -> list[tuple[str, str, str, str]]:
-    with db_connection(sqlite_url) as conn:
+    with with_db(sqlite_url) as conn:
         cursor = conn.cursor()
         sql_query = """
             SELECT uri, title, type, substr(body, 0, 300)

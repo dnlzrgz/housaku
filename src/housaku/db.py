@@ -44,7 +44,7 @@ def init_db(sqlite_url: str) -> None:
     conn.close()
 
 
-def purge_db(sqlite_url: str) -> None:
+def clear_db(sqlite_url: str) -> None:
     conn = sqlite3.connect(sqlite_url)
     cursor = conn.cursor()
 
@@ -58,7 +58,7 @@ def purge_db(sqlite_url: str) -> None:
     conn.close()
 
 
-def rebuilt_fts_table(sqlite_url: str) -> None:
+def rebuild_fts(sqlite_url: str) -> None:
     conn = sqlite3.connect(sqlite_url)
     cursor = conn.cursor()
 
@@ -69,7 +69,7 @@ def rebuilt_fts_table(sqlite_url: str) -> None:
 
 
 @contextmanager
-def db_connection(sqlite_url: str):
+def with_db(sqlite_url: str):
     conn = sqlite3.connect(sqlite_url)
 
     try:

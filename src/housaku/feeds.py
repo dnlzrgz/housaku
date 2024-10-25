@@ -2,7 +2,7 @@ import asyncio
 from typing import Any
 import aiohttp
 import feedparser
-from housaku.db import db_connection
+from housaku.db import with_db
 from housaku.utils import clean_html, console
 
 
@@ -34,7 +34,7 @@ async def index_feeds(sqlite_url: str, feeds: list[str]) -> None:
         try:
             entries = await fetch_feed(client, feed_url)
             for entry in entries:
-                with db_connection(sqlite_url) as conn:
+                with with_db(sqlite_url) as conn:
                     cursor = conn.cursor()
                     entry_link = entry.link
                     uri = f"{entry_link}"

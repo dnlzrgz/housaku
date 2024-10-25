@@ -4,8 +4,8 @@ import mimetypes
 from collections import deque
 import pymupdf
 from housaku.models import Doc
-from housaku.db import db_connection
-from housaku.utils import console, get_hash
+from housaku.db import with_db
+from housaku.utils import console, get_content_digest
 
 PLAIN_TEXT_FILETYPES = {
     "text/plain",
@@ -88,7 +88,7 @@ def read_generic_doc(file: Path) -> Doc:
 
 def index_file(sqlite_url: str, file: Path) -> None:
     try:
-        with db_connection(sqlite_url) as conn:
+        with with_db(sqlite_url) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -96,7 +96,7 @@ def index_file(sqlite_url: str, file: Path) -> None:
                 (f"{file.resolve()}",),
             )
             result = cursor.fetchone()
-            new_hash = get_hash(file)
+            new_hash = get_content_digest(file)
 
             if result:
                 exiting_hash = result[0]

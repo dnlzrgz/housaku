@@ -19,6 +19,6 @@ def clean_html(html: str) -> str:
     return cleaned_text
 
 
-def get_hash(file: Path) -> str:
+def get_content_digest(file: Path) -> str:
     with open(file, "rb") as f:
         return hashlib.file_digest(f, "sha256").hexdigest()

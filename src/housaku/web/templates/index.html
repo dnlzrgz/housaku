@@ -1,50 +1,13 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Housaku - Personal Search Engine</title>
-
-    <link
-      rel="apple-touch-icon"
-      href="{{ url_for('static', path='assets/apple-touch-icon.png') }}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="{{ url_for('static', path='assets/favicon-32x32.png') }}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="{{ url_for('static', path='assets/favicon-16x16.png') }}"
-    />
-    <link
-      rel="icon"
-      href="{{ url_for('static', path='assets/favicon.ico') }}"
-    />
-
-    <link
-      href="{{ url_for('static', path='/css/styles.css') }}"
-      rel="stylesheet"
-    />
-    <script src="{{ url_for('static', path='/js/p5.min.js') }}" defer></script>
-    <script src="{{ url_for('static', path='/js/main.js') }}" defer></script>
-  </head>
-  <body>
-    <main class="index">
-      <form method="post" action="/search/" class="form search-card glass-card">
-        <input
-          type="search"
-          name="query"
-          placeholder="Start searching"
-          value=""
-          required
-        />
-        <input type="submit" name="search" value="Search" />
-      </form>
-    </main>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<main class="form-wrapper">
+  <form method="post" action="/search/" class="form">
+    <input type="search" name="query" value="" placeholder="Start searching" required class="form__input">
+    <button type="submit" class="form__submit">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true" focusable="false" class="icon icon--search">
+        <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+      </svg>
+    </button>
+  </form>
+</main>
+{% endblock %}

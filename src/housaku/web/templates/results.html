@@ -1,59 +1,47 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Housaku - {{ query }}</title>
+{% extends "base.html" %} {% block title %}{{ query }}{% endblock %} {% block
+content %}
+<header class="header">
+  <form method="post" action="/search/" class="form form--header">
+    <input
+      type="search"
+      name="query"
+      value="{{ query }}"
+      placeholder="Start searching"
+      required
+      class="form__input"
+    />
+    <button type="submit" class="form__submit">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 512 512"
+        aria-hidden="true"
+        focusable="false"
+        class="icon icon--search"
+      >
+        <path
+          d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"
+        />
+      </svg>
+    </button>
+  </form>
+</header>
 
-    <link
-      rel="apple-touch-icon"
-      href="{{ url_for('static', path='assets/apple-touch-icon.png') }}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="{{ url_for('static', path='assets/favicon-32x32.png') }}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="{{ url_for('static', path='assets/favicon-16x16.png') }}"
-    />
-    <link
-      rel="icon"
-      href="{{ url_for('static', path='assets/favicon.ico') }}"
-    />
-
-    <link
-      href="{{ url_for('static', path='/css/styles.css') }}"
-      rel="stylesheet"
-    />
-    <script src="{{ url_for('static', path='/js/p5.min.js') }}" defer></script>
-    <script src="{{ url_for('static', path='/js/main.js') }}" defer></script>
-  </head>
-  <body>
-    <main>
-      <div class="results">
-        <form method="post" action="/search/" class="form results__form">
-          <input type="search" name="query" value="{{ query }}" />
-          <input type="submit" name="search" value="Search" />
-        </form>
-
-        <ul class="results__list">
-          {% for result in results %}
-          <li class="result-card">
-            {% if result[2] == "web" %}
-            <a href="{{ result[0] }}" target="_blank">{{ result[1] }}</a>
-            {% else %}
-            <a href="file://{{ result[0] }}" target="_blank">{{ result[1] }}</a>
-            {% endif %}
-            <p>{{ result[3]|truncate(280) }}</p>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </main>
-  </body>
-</html>
+<main class="results">
+  <ul class="results__list">
+    {% for result in results %}
+    <li class="result">
+      {% if result[2] == "web" %}
+      <a href="{{ result[0] }}" target="_blank" class="result__link"
+        >{{ result[1] }}</a
+      >
+      {% else %}
+      <a href="file://{{ result[0] }}" target="_blank" class="resul__link"
+        >{{ result[1] }}</a
+      >
+      {% endif %}
+      <p class="result__summary">{{ result[3]|truncate(280) }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}

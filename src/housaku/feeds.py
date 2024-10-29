@@ -29,7 +29,7 @@ async def fetch_post(client: aiohttp.ClientSession, post_url: str) -> str:
     return cleaned_html
 
 
-async def index_feeds(sqlite_url: str, feeds: list[str]) -> None:
+async def index_feed(sqlite_url: str, feeds: list[str]) -> None:
     async def process_feed(client: aiohttp.ClientSession, feed_url: str):
         try:
             entries = await fetch_feed(client, feed_url)
@@ -40,10 +40,12 @@ async def index_feeds(sqlite_url: str, feeds: list[str]) -> None:
                     uri = f"{entry_link}"
 
                     cursor.execute(
-                        "SELECT EXISTS(SELECT 1 FROM documents WHERE uri = ?)",
+                        "SELECT uri FROM documents WHERE uri = ?",
                         (uri,),
                     )
-                    if cursor.fetchone()[0]:
+                    result = cursor.fetchone()
+
+                    if result:
                         console.print(f"[yellow][Skip][/] already indexed '{uri}'.")
                         return
 
@@ -55,7 +57,7 @@ async def index_feeds(sqlite_url: str, feeds: list[str]) -> None:
                     INSERT INTO documents (uri, title, type, body)
                     VALUES (?, ?, ?, ?)
                     """,
-                        (uri, title, "web", body),
+                        (uri, title, "web/article", body),
                     )
                     console.print(f"[green][Ok][/] indexed '{uri}'.")
         except Exception as e:

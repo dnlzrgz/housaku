@@ -13,7 +13,7 @@ def init_db(sqlite_url: str) -> None:
         title TEXT,
         type TEXT NOT NULL,
         body TEXT NOT NULL,
-        hash TEXT
+        last_modified TEXT
     );
     """)
 

@@ -5,15 +5,15 @@ from collections import deque
 import pymupdf
 from housaku.models import Doc
 from housaku.db import with_db
-from housaku.utils import console, get_content_digest
+from housaku.utils import console
 
-PLAIN_TEXT_FILETYPES = {
+PLAIN_TEXT_MIME_TYPES = {
     "text/plain",
     "text/markdown",
     "text/csv",
 }
 
-COMPLEX_DOCUMENT_FILETYPES = {
+COMPLEX_DOCUMENT_MIME_TYPES = {
     "application/pdf",
     "application/epub+zip",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -21,7 +21,7 @@ COMPLEX_DOCUMENT_FILETYPES = {
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
 
-FILETYPES_SET = PLAIN_TEXT_FILETYPES.union(COMPLEX_DOCUMENT_FILETYPES)
+SUPPORTED_MIME_TYPES = PLAIN_TEXT_MIME_TYPES.union(COMPLEX_DOCUMENT_MIME_TYPES)
 
 pymupdf.JM_mupdf_show_errors = 0
 
@@ -53,10 +53,10 @@ def list_files(root: Path, exclude: set[str] = set()) -> list[Path]:
 def read_file(file: Path) -> Doc:
     mime_type, _ = mimetypes.guess_type(file)
 
-    if mime_type in PLAIN_TEXT_FILETYPES:
-        doc = read_txt(file)
-    elif mime_type in COMPLEX_DOCUMENT_FILETYPES:
-        doc = read_generic_doc(file)
+    if mime_type in PLAIN_TEXT_MIME_TYPES:
+        doc = read_plain_text(file)
+    elif mime_type in COMPLEX_DOCUMENT_MIME_TYPES:
+        doc = read_complex(file)
     else:
         raise Exception(f"Unsupported file format {mime_type}")
 
@@ -64,7 +64,7 @@ def read_file(file: Path) -> Doc:
     return doc
 
 
-def read_txt(file: Path) -> Doc:
+def read_plain_text(file: Path) -> Doc:
     with open(file, "r") as f:
         return Doc(
             uri=f"{file.resolve()}",
@@ -73,7 +73,7 @@ def read_txt(file: Path) -> Doc:
         )
 
 
-def read_generic_doc(file: Path) -> Doc:
+def read_complex(file: Path) -> Doc:
     body = ""
     with pymupdf.open(file) as doc:
         for page in doc:
@@ -92,16 +92,16 @@ def index_file(sqlite_url: str, file: Path) -> None:
             cursor = conn.cursor()
 
             cursor.execute(
-                "SELECT hash FROM documents WHERE uri = ?",
+                "SELECT last_modified FROM documents WHERE uri = ?",
                 (f"{file.resolve()}",),
             )
             result = cursor.fetchone()
-            new_hash = get_content_digest(file)
+            new_last_modified = round(file.stat().st_mtime, 3)
 
             if result:
-                exiting_hash = result[0]
+                current_last_modified = float(result[0])
 
-                if exiting_hash == new_hash:
+                if current_last_modified == new_last_modified:
                     console.print(f"[yellow][Skip][/] already indexed '{file}'.")
                     return
                 else:
@@ -109,20 +109,26 @@ def index_file(sqlite_url: str, file: Path) -> None:
                     cursor.execute(
                         """
                     UPDATE documents
-                    SET body = ?, hash = ?
+                    SET body = ?, last_modified = ?
                     WHERE uri = ?
                         """,
-                        (doc.body, new_hash, doc.uri),
+                        (doc.body, new_last_modified, doc.uri),
                     )
                     console.print(f"[yellow][Update][/] updated modified '{file}'.")
             else:
                 doc = read_file(file)
                 cursor.execute(
                     """
-            INSERT INTO documents (uri, title, type, body, hash)
+            INSERT INTO documents (uri, title, type, body, last_modified)
             VALUES (?, ?, ?, ?, ?)
             """,
-                    (doc.uri, doc.title, doc.doc_type, doc.body, new_hash),
+                    (
+                        doc.uri,
+                        doc.title,
+                        doc.doc_type,
+                        doc.body,
+                        new_last_modified,
+                    ),
                 )
                 console.print(f"[green][Ok][/] indexed '{file}'.")
     except Exception as e:

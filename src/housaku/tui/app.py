@@ -17,7 +17,7 @@ from textual.widgets import (
     Static,
 )
 from housaku.db import init_db
-from housaku.files import FILETYPES_SET
+from housaku.files import SUPPORTED_MIME_TYPES
 from housaku.settings import Settings
 from housaku.search import search
 
@@ -166,7 +166,7 @@ class HousakuApp(App):
             doc_title = title if title else uri
             truncated_content = textwrap.shorten(content, width=280, placeholder="...")
 
-            if doc_type in FILETYPES_SET:
+            if doc_type in SUPPORTED_MIME_TYPES:
                 link = f"[link=file://{encoded_uri}]{uri}[/]"
             else:
                 link = f"[link={uri}]{uri}[/]"

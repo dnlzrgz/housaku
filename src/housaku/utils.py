@@ -1,5 +1,3 @@
-import hashlib
-from pathlib import Path
 from rich.console import Console
 from selectolax.parser import HTMLParser
 
@@ -17,8 +15,3 @@ def clean_html(html: str) -> str:
     cleaned_text = " ".join(chunk for chunk in chunks if chunk)
 
     return cleaned_text
-
-
-def get_content_digest(file: Path) -> str:
-    with open(file, "rb") as f:
-        return hashlib.file_digest(f, "sha256").hexdigest()

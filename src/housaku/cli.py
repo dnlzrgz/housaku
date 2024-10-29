@@ -13,14 +13,8 @@ from uvicorn import run
 from housaku.web import app as web_app
 from housaku.tui import app as tui_app
 from housaku.db import init_db, with_db, clear_db, rebuild_fts
-from housaku.feeds import index_feeds
-from housaku.files import (
-    list_files,
-    index_file,
-    COMPLEX_DOCUMENT_FILETYPES,
-    PLAIN_TEXT_FILETYPES,
-    FILETYPES_SET,
-)
+from housaku.feeds import index_feed
+from housaku.files import list_files, index_file, SUPPORTED_MIME_TYPES
 from housaku.settings import Settings, config_file_path
 from housaku.search import search
 from housaku.utils import console
@@ -70,32 +64,11 @@ def cli() -> None:
     default=cpu_count() // 2,
     help="Maximum number of threads to use for indexing (default: half of CPU cores).",
 )
-@click.option(
-    "--purge",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Purge all data from the database before indexing.",
-)
-def index(include, exclude, max_threads, purge) -> None:
-    """
-    Index documents and posts from the specified sources in the
-    config.toml file.
-    """
+def index(include, exclude, max_threads) -> None:
     with console.status(
         "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
-        if purge:
-            try:
-                status.update("[green]Purging previous data...")
-                clear_db(settings.sqlite_url)
-                init_db(settings.sqlite_url)
-            except Exception as e:
-                console.print(
-                    f"[red][Err][/] something went wrong while purging database: {e}"
-                )
-
         merged_include = {Path(d) for d in (settings.files.include + list(include))}
         merged_exclude = set(settings.files.exclude) | set(exclude)
         urls = settings.feeds.urls
@@ -116,7 +89,7 @@ def index(include, exclude, max_threads, purge) -> None:
         status.update(
             "[green]Indexing feeds and posts... Please wait, this may take a moment."
         )
-        asyncio.run(index_feeds(settings.sqlite_url, urls))
+        asyncio.run(index_feed(settings.sqlite_url, urls))
 
         try:
             status.update("[green]Wrapping things up...")
@@ -129,7 +102,7 @@ def index(include, exclude, max_threads, purge) -> None:
 
 @cli.command(
     name="web",
-    short_help="Launchs Web UI.",
+    short_help="Launches Web UI.",
 )
 @click.option(
     "-p",
@@ -167,10 +140,6 @@ def start_tui() -> None:
     help="Limit the number of documents returned.",
 )
 def search_documents(query: str, limit: int) -> None:
-    """
-    Search for documents and posts based on the provided query.
-    """
-
     start_time = perf_counter()
 
     try:
@@ -193,17 +162,9 @@ def search_documents(query: str, limit: int) -> None:
         truncated_content = textwrap.shorten(content, width=280, placeholder="...")
         emoji = ":globe_with_meridians:"
         link = f"[link={uri}]{doc_title}[/]"
-        if doc_type in FILETYPES_SET:
+        if doc_type in SUPPORTED_MIME_TYPES:
             link = f"[link=file://{encoded_uri}]{doc_title}[/]"
-
-        if doc_type in PLAIN_TEXT_FILETYPES:
-            emoji = ":page_facing_up:"
-        elif doc_type == "application/pdf":
             emoji = ":scroll:"
-        elif doc_type == "application/epub+zip":
-            emoji = ":green_book:"
-        elif doc_type in COMPLEX_DOCUMENT_FILETYPES:
-            emoji = ":bookmark_tabs:"
 
         console.print(
             f"{emoji} [bold underline]{link}[/]\n{truncated_content}",
@@ -221,13 +182,9 @@ def search_documents(query: str, limit: int) -> None:
 
 @cli.command(
     name="config",
-    help="Open the configuration file.",
+    help="Opens the configuration file.",
 )
 def config() -> None:
-    """
-    Open the configuration file in the default text editor.
-    """
-
     editor = os.environ.get("EDITOR", None)
     try:
         if editor:
@@ -239,14 +196,23 @@ def config() -> None:
 
 
 @cli.command(
+    name="purge",
+    help="Purge all data from the database before indexing.",
+)
+def purge() -> None:
+    try:
+        clear_db(settings.sqlite_url)
+        init_db(settings.sqlite_url)
+        console.print("[green][Ok][/] database purged correctly!")
+    except Exception as e:
+        console.print(f"[red][Err][/] something went wrong while purging database: {e}")
+
+
+@cli.command(
     name="vacuum",
-    help="Reclaim unused spaced in the database.",
+    help="Reclaims unused spaced in the database.",
 )
 def vacuum() -> None:
-    """
-    Reclaims unused space in the database.
-    """
-
     try:
         with with_db(settings.sqlite_url) as conn:
             conn.execute("VACUUM")

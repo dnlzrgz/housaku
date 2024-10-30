@@ -40,58 +40,39 @@ def cli() -> None:
     short_help="Start indexing documents and posts.",
 )
 @click.option(
-    "-i",
-    "--include",
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-    ),
-    multiple=True,
-    help="Directory to include for indexing.",
-)
-@click.option(
-    "-e",
-    "--exclude",
-    multiple=True,
-    help="Directory or pattern to exclude from indexing.",
-)
-@click.option(
     "-t",
     "--max-threads",
     type=click.IntRange(min=1),
     default=cpu_count() // 2,
     help="Maximum number of threads to use for indexing (default: half of CPU cores).",
 )
-def index(include, exclude, max_threads) -> None:
+def index(max_threads) -> None:
     with console.status(
         "[green]Start indexing... Please, wait a moment.",
         spinner="arrow",
     ) as status:
-        merged_include = {Path(d) for d in (settings.files.include + list(include))}
-        merged_exclude = set(settings.files.exclude) | set(exclude)
+        include_files = set(settings.files.include)
+        exclude_files = set(settings.files.exclude)
         urls = settings.feeds.urls
 
         partial_function = partial(index_file, settings.sqlite_url)
-
-        for dir in merged_include:
-            status.update(
-                f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
-            )
-            files = list_files(dir, merged_exclude)
-
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_threads
-            ) as executor:
-                executor.map(partial_function, files)
-
-        status.update(
-            "[green]Indexing feeds and posts... Please wait, this may take a moment."
-        )
-        asyncio.run(index_feed(settings.sqlite_url, urls))
-
         try:
+            for dir in include_files:
+                status.update(
+                    f"[green]Indexing documents from '{dir.name}'... Please wait, this may take a moment.[/]"
+                )
+                files = list_files(dir, exclude_files)
+
+                with concurrent.futures.ThreadPoolExecutor(
+                    max_workers=max_threads
+                ) as executor:
+                    executor.map(partial_function, files)
+
+            status.update(
+                "[green]Indexing feeds and posts... Please wait, this may take a moment."
+            )
+            asyncio.run(index_feed(settings.sqlite_url, urls))
+
             status.update("[green]Wrapping things up...")
             rebuild_fts(settings.sqlite_url)
         except Exception as e:

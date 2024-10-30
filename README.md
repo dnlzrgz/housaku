@@ -1,66 +1,101 @@
-# Housaku (豊作)
+# Housaku (豊作 「ほうさく」)
 
-Housaku is a powerful yet simple personal search engine built on top of SQLite's FTS5.
+Housaku is a personal search engine built on top of SQLite's FTS5 that lets you search your documents and favorite feeds in one place.
 
-![TUI screenshot](./.github/tui-screenshot.svg)
+![Screenshot of the TUI](./.github/screenshot_tui.png)
+
+> Housaku is currently in early development, so you can expect some incompatible changes between version and other minor issues. Once version `v1.0.0` is reached, my goal is to focus on stability and avoiding breaking changes.
 
 ## Features
 
-- **Support for multiple file formats**: Index files in a variety of formats, including:
+- Support for the following file formats:
   - Plain text files.
   - Markdown.
+  - CSV.
   - PDF.
   - EPUB.
-  - DOCX, XLSX and PPTX.
-  - CSV.
-- **Basic Web scraping**: In addition to personal files, you can also index posts from your favorite RSS/Atom feeds.
-- **Parallel file processing**: Housaku utilizes multi-threading to process files simultaneously, making the indexing process incredibly fast.
-- **Powered by SQLite's FTS5**: Built on the advanced full-text search capabilities of SQLite's FTS5 extension.
-- **Incremental indexing**: Only new documents are indexed.
-- **Relevant sesults with BM25**: Search results are sorted using the BM25 algorithm, ensuring the most relevant results.
-- **Web UI**: Search using your favorite web browser thanks to a friendly and modern Web UI.
-- **TUI**: A simple but easy-to-use TUI made with Textual that enhances the command-line experience.
+  - DOCX.
+  - XLSX.
+  - PPTX.
+- Support for RSS/Atom feeds parsing and indexing.
+- Parallel file processing.
+- Concurrent feed processing.
+- Web UI.
+- Modern TUI.
+- Easy-to-use CLI.
+- Relevant results powered by the BM25 algorithm.
+- Automatically updates files that had been modified since the last indexing session.
 
-## WIP
+> Support for other file formats like ODT is coming.
 
-Housaku is in active development, and some aspects need further refinement before I can consider the project "stable." This includes the TUI, which requires some polishing, and the Web UI, which needs significant improvements.
+## Technologies used
 
-## Motivation
+- [aiohttp](https://docs.aiohttp.org/en/stable/index.html).
+- [click](https://click.palletsprojects.com/en/stable/).
+- [FastAPI](https://fastapi.tiangolo.com).
+- [feedparser](https://feedparser.readthedocs.io/en/latest/).
+- [pydantic](https://docs.pydantic.dev/latest/).
+- [pymupdf](https://pymupdf.readthedocs.io/en/latest/)
+- [rich](https://rich.readthedocs.io/en/stable/introduction.html).
+- [SQLite](https://www.sqlite.org/index.html).
+- [SQLite's FTS5 extension](https://sqlite.org/fts5.html).
+- [textual](https://www.textualize.io).
 
-As someone who stores a wealth of documents on my hard drive—ranging from academic PDFs to personal notes in Obsidian—I often found it challenging to search across multiple applications and file types. I wanted a solution that would allow me to search not only my notes but also important books in my Calibre library and blog posts from my favorite feeds. This inspired me to build Housaku.
+## Why
 
-## Install
+Every time I need to search for something, I find myself feeling a bit frustrated with the experience. Web search results have become increasingly inconsistent, and I often spend more time looking for what I truly want or need than I did before. Searching my personal files is also not a great experience. While programs like Obsidian, which I use for the majority of my personal notes, are somewhat better, the experience is still slower, and the results rely on simple pattern matching. Additionally, searching for specific content in documents outside my vault, such as my university notes, PDFs, presentations, or my personal library of books, becomes nearly impossible.
+This is why I decided to build Housaku. I wanted an easy-to-use and easy-to-maintain program that would allow me to search all my documents from a single location without having to worry about format or location. I also wanted my results to be relevant to my search queries, not just based on basic pattern matching, and to be able to search other resources, such as the posts from my favorite feeds.
 
-### Via `pip`
+## Installation
+
+> At the moment Housaku is only compatible with Python `3.12.*` versions.
+
+### Using `uv`
+
+The recommended way of installing Housaku is by using [uv](https://github.com/astral-sh/uv):
 
 ```bash
-pip install housaku
+uv tool install housaku
 ```
 
-### Via `pipx`
+Now you just need to run:
+
+```bash
+housaku --help
+```
+
+To upgrade, use:
+
+```bash
+uv tool upgrade housaku
+
+# Or
+
+uv tool upgrade housaku --reinstall
+```
+
+### Using `pipx`
+
+To install Housaku using `pipx`, simply run:
 
 ```bash
 pipx install housaku
 ```
 
-### Via `uv`
+### Via `pip`
+
+You can also install Housaku using pip, but the exact command will depend on how your environment is set up. In this case, the command should look something like this:
 
 ```bash
-uv tool install housaku
-
-# Or
-
-uvx housaku
+python3 -m pip install housaku
 ```
-
-## Usage
 
 ### Configuration
 
-To start using Housaku, the first step is to edit the `config.toml` file located at `$XDG_CONFIG_HOME/housaku/config.toml`. This file is generated the first time you run `housaku` and will look something like this:
+Before you start using Housaku, the first step is to edit the `config.toml` file located at your `$XDG_CONFIG_HOME/housaku/config.toml`. This file is generated automatically the first time you run `housaku` and will look something like this:
 
 ```toml
-# Welcome! This is the configuration file for housaku.
+# Welcome! This is the configuration file for Housaku.
 
 [files]
 # Directories to include for indexing.
@@ -77,59 +112,127 @@ exclude = []
 urls = []
 ```
 
-> Notes: This folder will also contain the SQLite database where all the indexed data will be stored.
+> The folder that holds the configuration file as well as the SQLite database is determined by the `get_app_dir` utility. You can read more about it [here](https://click.palletsprojects.com/en/stable/api/#click.get_app_dir).
 
-To open your `config.toml` file, you can just run the following command:
+An easy way to open your `config.toml` file is to run the following command:
 
 ```bash
 housaku config
 ```
 
-### Indexing
+### Theming
 
-Once you have configured your directories and/or feeds, run the following command to start the indexing process.
+You can also adapt the default theme of Housaku, which is based on the [Dracula theme](https://draculatheme.com), by adding the following section to your `config.toml` file and updating the values of the following variables:
+
+```toml
+[theme]
+primary = "#ff79c6"
+foreground = "#f8f8f2"
+background= "#1E1F29"
+warning= "#ffb86c"
+error= "#ff5555"
+success= "#50fa7b"
+accent= "#bd93f9"
+surface= "#44475a"
+boost= "#44475a"
+```
+
+## Usage
+
+### Help
+
+The best way to see which commands are available is to run `housaku` with the `--help` flag.
+
+```bash
+housaku --help
+```
+
+You can also learn more about what a specific command does by running:
+
+```bash
+housaku [command] --help
+
+# Like for example
+
+housaku index --help
+```
+
+### Config
+
+The `config` command is a very simple command that just open the `config.toml` file using the default editor.
+
+```bash
+housaku config
+```
+
+### Index
+
+After you have configured the list of directories containing the documents you want to index, as well as the list of feeds from which you want to fetch the posts, you can run:
 
 ```bash
 housaku index
 ```
 
-If you want to specify directories for indexing when running the `index` command, use the `-i` option. For example:
+> Note that you don't need to specify both files and feeds to start indexing.
 
-```bash
-housaku index -i "/home/<user>/Documents/notes" -i "/home/<user>/Documents/vault/"
-```
+At the moment, indexing files is done in parallel, which makes the process faster but also introduces some complications. For example, canceling the indexing process is not recommended at the moment. My advice is to index small folders if you want to test the tool, or simply allow the indexing process to finish. In my case, I have about 7,000 documents, including markdown files, PDF, and EPUB files, as well as a large list of approximately 150 feeds. The entire process takes about 10 to 15 minutes.
 
 ### Search
 
-To perform a search, you just need to use the following command:
+#### The `search` command
+
+The simplest way to start searching your documents and posts is by using the `search` command:
 
 ```bash
-housaku search --query "search engine"
-
-# By default the limit is 20
-housaku search --query "search engine" --limit 5
+houskau searh --query "Django AND Postgres"
 ```
 
-### TUI
+You can also limit the number of results by using the `--limit` option which, by default, is set to 10:
 
-You can also search using the TUI. To start using it just run:
+```bash
+housaku search --query "Django AND Postgres" --limit 20
+```
+
+If you don't specify a `query` using the `--query/-q` options you will be prompted to enter one.
+
+#### Using the TUI
+
+My favorite and recommended way to search is by using the TUI. To start it, just run:
 
 ```bash
 housaku tui
-
 ```
 
-### Web
+> To exit the TUI just press `ctrl + q`, and to open a search result, press `Enter` while the result is highlighted.
 
-To start the Web UI, simply run:
+#### Using the Web UI
+
+Housaku also has a very simple Web UI that you can access by running:
 
 ```bash
 housaku web
-
-# You can also specify the port
-housaku web --port 8787 # by default is 4242
 ```
+
+> The default port is `4242`.
+
+This searching method have some limitations. For example, you can't search results that link to your personal files. In the future, I will try to solve this limitations, but for now please keep this in mind.
+
+### `vacuum` and `purge`
+
+The `vacuum` command is used to optimize the SQLite database by reclaiming unused space and improving performance. To run the vacuum command, simply execute:
+
+```bash
+housaku vacuum
+```
+
+The `purge` command is used to completely clear all data from the database. This command is useful when you want to reset the database to its initial state.
+
+```bash
+housaku purge
+```
+
+> Be careful before using both of these commands since they will have a direct impact on the data you hold in your database.
 
 ## Contributing
 
-Contributions are welcome! If you have suggestions for improvements or new features, feel free to open an issue.
+Contributions are welcomed! If you have any suggestions feel free to open an issue.

@@ -3,6 +3,7 @@ from importlib.metadata import version
 from typing import Type, Tuple
 from pathlib import Path
 import click
+from textual.design import ColorSystem
 from pydantic import BaseModel, DirectoryPath, Field
 from pydantic_settings import (
     BaseSettings,
@@ -15,6 +16,21 @@ app_name = "housaku"
 app_dir = Path(click.get_app_dir(app_name=app_name))
 config_file_path = app_dir / "config.toml"
 template_file_path = Path(__file__).parent / "config_template.toml"
+
+
+class ThemeSettings(BaseModel):
+    primary: str | None = Field(default="#ff79c6")
+    foreground: str | None = Field(default="#f8f8f2")
+    background: str | None = Field(default="#1E1F29")
+    warning: str | None = Field(default="#ffb86c")
+    error: str | None = Field(default="#ff5555")
+    success: str | None = Field(default="#50fa7b")
+    accent: str | None = Field(default="#bd93f9")
+    surface: str | None = Field(default="#44475a")
+    boost: str | None = Field(default="#44475a")
+
+    def to_color_system(self) -> ColorSystem:
+        return ColorSystem(**self.model_dump())
 
 
 class FileSettings(BaseModel):
@@ -34,6 +50,7 @@ class Settings(BaseSettings):
     version: str = version("housaku")
 
     sqlite_url: str = f"{app_dir / 'db.sqlite3'}"
+    theme: ThemeSettings = Field(default_factory=ThemeSettings)
     files: FileSettings = Field(default_factory=FileSettings)
     feeds: FeedSettings = Field(default_factory=FeedSettings)
 

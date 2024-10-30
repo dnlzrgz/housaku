@@ -457,7 +457,7 @@ wheels = [
 
 [[package]]
 name = "housaku"
-version = "0.6.8"
+version = "0.6.9"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp", extra = ["speedups"] },

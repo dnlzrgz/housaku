@@ -178,7 +178,7 @@ def config() -> None:
 
 @cli.command(
     name="purge",
-    help="Purge all data from the database before indexing.",
+    help="Purges all data from the database.",
 )
 def purge() -> None:
     try:

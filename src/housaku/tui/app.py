@@ -51,6 +51,8 @@ class HousakuApp(App):
 
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.theme = self.settings.theme
+
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -96,6 +98,11 @@ class HousakuApp(App):
         )
         yield ListView(classes="results")
         yield Footer(classes="footer")
+
+    def get_css_variables(self) -> dict:
+        css_variables = super().get_css_variables()
+        color_system = self.theme.to_color_system().generate()
+        return css_variables | color_system
 
     def on_mount(self) -> None:
         self.query_input = self.query_one(".query__input")

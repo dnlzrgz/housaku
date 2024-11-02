@@ -6,7 +6,6 @@ import textwrap
 import urllib.parse
 from functools import partial
 from multiprocessing import cpu_count
-from pathlib import Path
 from time import perf_counter
 import rich_click as click
 from uvicorn import run

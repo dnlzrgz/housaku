@@ -4,7 +4,7 @@ Housaku is a personal search engine built on top of SQLite's FTS5 that lets you 
 
 ![Screenshot of the TUI](./.github/screenshot_tui.png)
 
-> Housaku is currently in early development, so you can expect some incompatible changes between version and other minor issues. Once version `v1.0.0` is reached, my goal is to focus on stability and avoiding breaking changes.
+> Housaku is currently in early development, so you can expect some incompatible changes and other minor issues when updating. Once version `v1.0.0` is reached, my goal is to focus on stability and avoiding breaking changes.
 
 ## Features
 
@@ -43,8 +43,8 @@ Housaku is a personal search engine built on top of SQLite's FTS5 that lets you 
 
 ## Why
 
-Every time I need to search for something, I find myself feeling a bit frustrated with the experience. Web search results have become increasingly inconsistent, and I often spend more time looking for what I truly want or need than I did before. Searching my personal files is also not a great experience. While programs like Obsidian, which I use for the majority of my personal notes, are somewhat better, the experience is still slower, and the results rely on simple pattern matching. Additionally, searching for specific content in documents outside my vault, such as my university notes, PDFs, presentations, or my personal library of books, becomes nearly impossible.
-This is why I decided to build Housaku. I wanted an easy-to-use and easy-to-maintain program that would allow me to search all my documents from a single location without having to worry about format or location. I also wanted my results to be relevant to my search queries, not just based on basic pattern matching, and to be able to search other resources, such as the posts from my favorite feeds.
+Every time I need to search for something, I find myself feeling a bit frustrated with the experience. Web search results have become increasingly inconsistent, and I often spend more time looking for what I truly want or need than I did before. Searching my personal files is also not a great experience. While programs like Obsidian, which I use for the majority of my personal notes, are somewhat better, the experience is still slower, and the results rely on a simple pattern matching. Additionally, searching for a specific piece of content in documents outside my vault, such as my university notes, PDFs, presentations, or my personal library of books, becomes nearly impossible.
+That is why I decided to build Housaku. I wanted an easy-to-use and easy-to-maintain program that would allow me to search all my documents and favorite feeds from a single location without having to worry about format or location. I also wanted my results to be relevant to my search queries, not just based on basic pattern matching or a regular expression.
 
 ## Installation
 
@@ -175,6 +175,14 @@ housaku index
 
 > Note that you don't need to specify both files and feeds to start indexing.
 
+You can also change the number of threads being used when indexing your files and documents:
+
+```bash
+housaku index -t 8
+```
+
+> I recommend to stick with the default number of threads.
+
 At the moment, indexing files is done in parallel, which makes the process faster but also introduces some complications. For example, canceling the indexing process is not recommended at the moment. My advice is to index small folders if you want to test the tool, or simply allow the indexing process to finish. In my case, I have about 7,000 documents, including markdown files, PDF, and EPUB files, as well as a large list of approximately 150 feeds. The entire process takes about 10 to 15 minutes.
 
 ### Search
@@ -194,6 +202,8 @@ housaku search --query "Django AND Postgres" --limit 20
 ```
 
 If you don't specify a `query` using the `--query/-q` options you will be prompted to enter one.
+
+> You can learn more about the query syntax [here](https://sqlite.org/fts5.html#full_text_query_syntax).
 
 #### Using the TUI
 
@@ -215,7 +225,7 @@ housaku web
 
 > The default port is `4242`.
 
-This searching method have some limitations. For example, you can't search results that link to your personal files. In the future, I will try to solve this limitations, but for now please keep this in mind.
+This searching method have some limitations. For example, you can't open results that link to your personal files. In the future, I will try to solve this limitations, but for now please keep this in mind.
 
 ### `vacuum` and `purge`
 

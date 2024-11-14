@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "v0.6.10"
+version = "v0.6.11"
 description = "A personal search engine built on top of SQLite's FTS5."
 readme = "README.md"
 license = "MIT"

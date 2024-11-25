@@ -23,10 +23,11 @@ Housaku is a personal search engine built on top of SQLite's FTS5 that lets you 
 - Web UI.
 - Modern TUI.
 - Easy-to-use CLI.
+- Theming (only for the TUI).
 - Relevant results powered by the BM25 algorithm.
 - Automatically updates files that had been modified since the last indexing session.
 
-> Support for other file formats like ODT is coming.
+> Support for additional file formats, such as ODT, is coming soon.
 
 ## Technologies used
 
@@ -47,10 +48,6 @@ Every time I need to search for something, I find myself feeling a bit frustrate
 That is why I decided to build Housaku. I wanted an easy-to-use and easy-to-maintain program that would allow me to search all my documents and favorite feeds from a single location without having to worry about format or location. I also wanted my results to be relevant to my search queries, not just based on basic pattern matching or a regular expression.
 
 ## Installation
-
-> At the moment Housaku is only compatible with Python `3.12.*` versions.
-
-### Using `uv`
 
 The recommended way of installing Housaku is by using [uv](https://github.com/astral-sh/uv):
 
@@ -97,6 +94,22 @@ Before you start using Housaku, the first step is to edit the `config.toml` file
 ```toml
 # Welcome! This is the configuration file for Housaku.
 
+# Available themes include:
+# - "dracula"
+# - "textual-dark"
+# - "textual-light"
+# - "nord"
+# - "gruvbox"
+# - "catppuccin-mocha"
+# - "textual-ansi"
+# - "tokyo-night"
+# - "monokai"
+# - "flexoki"
+# - "catppuccin-latte"
+# - "solarized-light"
+
+theme = "dracula"
+
 [files]
 # Directories to include for indexing.
 # Example: include = ["/home/<user>/documents/notes"]
@@ -118,23 +131,6 @@ An easy way to open your `config.toml` file is to run the following command:
 
 ```bash
 housaku config
-```
-
-### Theming
-
-You can also adapt the default theme of Housaku, which is based on the [Dracula theme](https://draculatheme.com), by adding the following section to your `config.toml` file and updating the values of the following variables:
-
-```toml
-[theme]
-primary = "#ff79c6"
-foreground = "#f8f8f2"
-background= "#1E1F29"
-warning= "#ffb86c"
-error= "#ff5555"
-success= "#50fa7b"
-accent= "#bd93f9"
-surface= "#44475a"
-boost= "#44475a"
 ```
 
 ## Usage

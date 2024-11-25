@@ -1,5 +1,20 @@
 # Welcome! This is the configuration file for Housaku.
 
+# Available themes include:
+# - "dracula"
+# - "textual-dark"
+# - "textual-light"
+# - "nord"
+# - "gruvbox"
+# - "catppuccin-mocha"
+# - "textual-ansi"
+# - "tokyo-night"
+# - "monokai"
+# - "flexoki"
+# - "catppuccin-latte"
+# - "solarized-light"
+theme = "dracula"
+
 [files]
 # Directories to include for indexing.
 # Example: include = ["/home/<user>/documents/notes"]

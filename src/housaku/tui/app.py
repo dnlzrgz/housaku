@@ -50,10 +50,10 @@ class HousakuApp(App):
     max_results: reactive[int] = reactive(10)
 
     def __init__(self, settings: Settings):
+        super().__init__()
+
         self.settings = settings
         self.theme = self.settings.theme
-
-        super().__init__()
 
     def compose(self) -> ComposeResult:
         yield Container(
@@ -99,11 +99,6 @@ class HousakuApp(App):
         yield ListView(classes="results")
         yield Footer(classes="footer")
 
-    def get_css_variables(self) -> dict:
-        css_variables = super().get_css_variables()
-        color_system = self.theme.to_color_system().generate()
-        return css_variables | color_system
-
     def on_mount(self) -> None:
         self.query_input = self.query_one(".query__input")
         self.submit_button = self.query_one(".submit")
@@ -113,7 +108,7 @@ class HousakuApp(App):
 
         self.query_input.focus()
 
-    @on(Input.Submitted, selector=".query__input")
+    @on(Input.Submitted)
     @on(Button.Pressed, selector=".submit")
     async def handle_submit(self, _: Input.Submitted | Button.Pressed) -> None:
         if not self.query_input.is_valid:

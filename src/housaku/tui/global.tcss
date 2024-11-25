@@ -1,8 +1,8 @@
 Screen {
-  background: $background;
+  background: $surface;
   color: $foreground;
-  scrollbar-background-active: $boost;
-  scrollbar-background: $boost;
+  scrollbar-background-active: $panel;
+  scrollbar-background: $panel;
   scrollbar-color-active: $primary;
   scrollbar-color-hover: $primary;
   scrollbar-color: $primary 80%;
@@ -16,14 +16,13 @@ Screen {
   padding: 1 1;
 
   .about__title {
-    color: $primary;
+    color: $accent;
     margin-right: 1;
     width: auto;
   }
 
   .about__version {
-    color: $accent;
-    width: auto;
+    color: $foreground;
   }
 }
 
@@ -43,11 +42,13 @@ Screen {
   Label {
     background: $primary;
     border: none;
+    color: $surface;
     height: 1;
     padding: 0 1;
   }
 
   Input {
+    background: $boost;
     border: none;
     height: 1;
     padding: 0 1;
@@ -59,30 +60,30 @@ Screen {
 
     &:focus {
       background: $background;
+      border-left: outer $primary;
       color: $foreground;
       padding-left: 0;
-      border-left: outer $primary;
     }
   }
 
   .submit {
     background: $primary;
     border: none;
-    color: $foreground;
+    color: $background;
     height: 1;
     padding: 0 1;
   }
 }
 
 .results {
-  background: $background;
+  background: $surface;
   border-title-align: left;
   border: round $primary 80%;
   height: 1fr;
   margin: 0 1;
   margin-top: 1;
-  scrollbar-background-active: $boost;
-  scrollbar-background: $boost;
+  scrollbar-background-active: $panel;
+  scrollbar-background: $panel;
   scrollbar-color-active: $primary;
   scrollbar-color-hover: $primary;
   scrollbar-color: $primary 80%;
@@ -92,6 +93,21 @@ Screen {
   &:focus {
     border: round $primary;
   }
+
+  .result {
+    background: $surface;
+    border: none;
+    color: $foreground;
+    padding: 0 1;
+
+    .result__title {
+      text-style: bold;
+    }
+
+    .result__link {
+      text-style: underline;
+    }
+  }
 }
 
 LoadingIndicator {
@@ -99,50 +115,22 @@ LoadingIndicator {
   background: $background;
 }
 
-.result {
-  background: $background;
-  border: none;
-  color: $foreground;
-  padding: 1;
-
-  &.--highlight {
-    padding-left: 0;
-    border-left: outer $primary;
-
-    .result__title {
-      color: $primary;
-    }
-  }
-
-  .result__title {
-    text-style: bold;
-  }
-
-  .result__link {
-    text-style: underline;
-  }
-}
-
 Footer {
   background: transparent;
   border: none;
-  height: 2;
+  height: 1;
   padding: 0 1;
 
   & FooterKey {
-    background: transparent;
-    color: $foreground 85%;
-
     .footer-key--key {
-      background: transparent;
-      color: $primary;
+      color: $accent;
     }
   }
 }
 
 Toast {
   color: $foreground;
-  background: $surface;
+  background: $panel;
 
   &.-information {
     border-left: outer $success;

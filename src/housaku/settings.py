@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     version: str = version("housaku")
 
     sqlite_url: str = f"{app_dir / 'db.sqlite3'}"
-    theme: str = "textual-dark"
+    theme: str = "dracula"
     files: FileSettings = Field(default_factory=FileSettings)
     feeds: FeedSettings = Field(default_factory=FeedSettings)
 

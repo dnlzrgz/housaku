@@ -1,27 +1,14 @@
 from pathlib import Path
 import fnmatch
-import mimetypes
 from collections import deque
 import pymupdf
 from housaku.models import Doc
 from housaku.db import with_db
 from housaku.utils import console
 
-PLAIN_TEXT_MIME_TYPES = {
-    "text/plain",
-    "text/markdown",
-    "text/csv",
-}
-
-COMPLEX_DOCUMENT_MIME_TYPES = {
-    "application/pdf",
-    "application/epub+zip",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-}
-
-SUPPORTED_MIME_TYPES = PLAIN_TEXT_MIME_TYPES.union(COMPLEX_DOCUMENT_MIME_TYPES)
+PLAIN_TEXT_EXTENSIONS = {".txt", ".md", ".csv"}
+COMPLEX_DOCUMENT_EXTENSIONS = {".pdf", ".epub", ".docx", ".pptx", ".xlsx"}
+SUPPORTED_EXTENSIONS = PLAIN_TEXT_EXTENSIONS.union(COMPLEX_DOCUMENT_EXTENSIONS)
 
 pymupdf.JM_mupdf_show_errors = 0
 
@@ -51,39 +38,34 @@ def list_files(root: Path, exclude: set[str] = set()) -> list[Path]:
 
 
 def read_file(file: Path) -> Doc:
-    mime_type, _ = mimetypes.guess_type(file)
-
-    if mime_type in PLAIN_TEXT_MIME_TYPES:
-        doc = read_plain_text(file)
-    elif mime_type in COMPLEX_DOCUMENT_MIME_TYPES:
-        doc = read_complex(file)
+    doc_type = file.suffix
+    if doc_type in PLAIN_TEXT_EXTENSIONS:
+        body = read_plain_text(file)
+    elif doc_type in COMPLEX_DOCUMENT_EXTENSIONS:
+        body = read_complex(file)
     else:
-        raise Exception(f"Unsupported file format {mime_type}")
-
-    doc.doc_type = mime_type
-    return doc
-
-
-def read_plain_text(file: Path) -> Doc:
-    with open(file, "r") as f:
-        return Doc(
-            uri=f"{file.resolve()}",
-            title=file.name,
-            body=f.read(),
-        )
-
-
-def read_complex(file: Path) -> Doc:
-    body = ""
-    with pymupdf.open(file) as doc:
-        for page in doc:
-            body += page.get_text()
+        raise Exception(f'Unsupported file format "{file.suffix}"')
 
     return Doc(
         uri=f"{file.resolve()}",
         title=file.name,
         body=body,
+        doc_type=doc_type,
     )
+
+
+def read_plain_text(file: Path) -> str:
+    with open(file, "r") as f:
+        return f.read()
+
+
+def read_complex(file: Path) -> str:
+    body = ""
+    with pymupdf.open(file) as doc:
+        for page in doc:
+            body += page.get_text()
+
+    return body
 
 
 def index_file(sqlite_url: str, file: Path) -> None:
@@ -102,7 +84,7 @@ def index_file(sqlite_url: str, file: Path) -> None:
                 current_last_modified = float(result[0])
 
                 if current_last_modified == new_last_modified:
-                    console.print(f"[yellow][Skip][/] already indexed '{file}'.")
+                    console.print(f'[yellow][Skip][/] already indexed "{file}".')
                     return
                 else:
                     doc = read_file(file)
@@ -114,7 +96,7 @@ def index_file(sqlite_url: str, file: Path) -> None:
                         """,
                         (doc.body, new_last_modified, doc.uri),
                     )
-                    console.print(f"[yellow][Update][/] updated modified '{file}'.")
+                    console.print(f'[yellow][Update][/] updated modified "{file}".')
             else:
                 doc = read_file(file)
                 cursor.execute(
@@ -130,6 +112,6 @@ def index_file(sqlite_url: str, file: Path) -> None:
                         new_last_modified,
                     ),
                 )
-                console.print(f"[green][Ok][/] indexed '{file}'.")
+                console.print(f'[green][Ok][/] indexed "{file}".')
     except Exception as e:
-        console.print(f"[red][Err][/] something went wrong while reading '{file}': {e}")
+        console.print(f'[red][Err][/] something went wrong while reading "{file}": {e}')

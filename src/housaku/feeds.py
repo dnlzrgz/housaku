@@ -1,5 +1,6 @@
-import asyncio
 from typing import Any
+from urllib.parse import urlparse
+import asyncio
 import aiohttp
 import feedparser
 from housaku.db import with_db
@@ -51,16 +52,18 @@ async def index_feed(sqlite_url: str, feeds: list[str]) -> None:
 
                     body = await fetch_post(client, entry_link)
                     title = entry.get("title", entry_link)
+                    protocol = urlparse(entry_link).scheme
 
                     cursor.execute(
                         """
                     INSERT INTO documents (uri, title, type, body)
                     VALUES (?, ?, ?, ?)
                     """,
-                        (uri, title, "web/article", body),
+                        (uri, title, protocol, body),
                     )
-                    console.print(f"[green][Ok][/] indexed '{uri}'.")
+                    console.print(f'[green][Ok][/] indexed "{uri}".')
         except Exception as e:
+            # TODO: Improve error message
             console.print(f"[red][Err][/] {e}")
 
     async with aiohttp.ClientSession() as client:

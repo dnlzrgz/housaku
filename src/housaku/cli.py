@@ -13,7 +13,7 @@ from housaku.web import app as web_app
 from housaku.tui import app as tui_app
 from housaku.db import init_db, with_db, clear_db, rebuild_fts
 from housaku.feeds import index_feed
-from housaku.files import list_files, index_file, SUPPORTED_MIME_TYPES
+from housaku.files import list_files, index_file, SUPPORTED_EXTENSIONS
 from housaku.settings import Settings, config_file_path
 from housaku.search import search
 from housaku.utils import console
@@ -140,15 +140,12 @@ def search_documents(query: str, limit: int) -> None:
         doc_title = title if title else uri
 
         truncated_content = textwrap.shorten(content, width=280, placeholder="...")
-        emoji = ":globe_with_meridians:"
         link = f"[link={uri}]{doc_title}[/]"
-        if doc_type in SUPPORTED_MIME_TYPES:
+        if doc_type in SUPPORTED_EXTENSIONS:
             link = f"[link=file://{encoded_uri}]{doc_title}[/]"
-            emoji = ":scroll:"
 
         console.print(
-            f"{emoji} [bold underline]{link}[/]\n{truncated_content}",
-            emoji=True,
+            f"{doc_type} [bold underline]{link}[/]\n{truncated_content}",
             justify="left",
             highlight=False,
             end="\n\n",

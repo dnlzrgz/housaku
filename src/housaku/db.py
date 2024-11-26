@@ -17,11 +17,8 @@ def init_db(sqlite_url: str) -> None:
     );
     """)
 
-    # Adds index to `uri` and `last_modified` columns.
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_uri ON documents(uri)")
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_last_modified ON documents(last_modified)"
-    )
+    # Adds index for `uri` column.
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_uri ON documents(uri);")
 
     # Creates virtual FTS5 table for full-text search
     cursor.execute("""

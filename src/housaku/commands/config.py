@@ -2,6 +2,7 @@ import os
 import subprocess
 import rich_click as click
 from housaku.settings import config_file_path
+from housaku.utils import console
 
 
 @click.command(

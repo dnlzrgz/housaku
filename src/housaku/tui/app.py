@@ -142,7 +142,7 @@ class HousakuApp(App):
         start_time = perf_counter()
 
         try:
-            results = search(
+            documents = search(
                 self.settings.sqlite_url, self.search_query, self.max_results
             )
         except Exception as e:
@@ -155,7 +155,7 @@ class HousakuApp(App):
 
         end_time = perf_counter()
 
-        if not results:
+        if not documents:
             self.notify(
                 "No results found.",
                 severity="warning",
@@ -163,7 +163,7 @@ class HousakuApp(App):
             self.results.loading = False
             return
 
-        for uri, title, doc_type, content in results:
+        for uri, title, doc_type, content in documents:
             encoded_uri = urllib.parse.quote(uri, safe=":/")
             doc_title = title if title else uri
             truncated_content = textwrap.shorten(content, width=280, placeholder="...")
@@ -175,10 +175,13 @@ class HousakuApp(App):
 
             self.results.mount(
                 ListItem(
-                    Static(doc_title, classes="result__title"),
-                    Static(link, classes="result__link"),
-                    Static(truncated_content, classes="result__content"),
-                    ItemMetadata(encoded_uri),
+                    Container(Static(doc_type), classes="result__type"),
+                    Container(
+                        Static(doc_title, classes="result__title"),
+                        Static(link, classes="result__link"),
+                        Static(truncated_content, classes="result__content"),
+                        ItemMetadata(encoded_uri),
+                    ),
                     classes="result",
                 )
             )
@@ -188,7 +191,7 @@ class HousakuApp(App):
         self.results.focus()
         self.results.index = 0
         self.results.border_subtitle = (
-            f"{self.max_results} results in {elapsed_time:.3f}s"
+            f"Found {len(documents)} results in {elapsed_time:.3f}s"
         )
 
 

@@ -59,7 +59,7 @@ Screen {
     }
 
     &:focus {
-      background: $background;
+      background: $surface;
       border-left: outer $primary;
       color: $foreground;
       padding-left: 0;
@@ -90,22 +90,49 @@ Screen {
   scrollbar-size-horizontal: 1;
   scrollbar-size: 1 1;
 
-  &:focus {
-    border: round $primary;
-  }
-
   .result {
     background: $surface;
     border: none;
     color: $foreground;
+    grid-columns: 9 1fr;
+    grid-size: 2;
+    height: 3;
+    layout: grid;
+    margin-bottom: 1;
     padding: 0 1;
 
+    &.-focus {
+      background: $surface;
+    }
+
+    &.-highlight {
+      border-left: outer $primary;
+      padding-left: 0;
+
+      * {
+        background: $surface;
+        color: $foreground;
+      }
+    }
+
+    .result__type {
+      Static {
+        background: $primary-muted;
+        color: $primary;
+        text-style: bold;
+        width: auto;
+      }
+    }
+
     .result__title {
+      background: $primary-muted;
+      color: $primary;
       text-style: bold;
+      width: auto;
     }
 
     .result__link {
-      text-style: underline;
+      text-style: italic underline;
     }
   }
 }

@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "v0.7.5"
+version = "v0.7.6"
 description = "A personal search engine built on top of SQLite's FTS5."
 readme = "README.md"
 license = "MIT"
@@ -16,7 +16,7 @@ dependencies = [
   "fastapi[standard]>=0.115.0",
   "python-multipart>=0.0.12",
   "textual>=0.82.0",
-  "aiohttp>=3.11.7",
+  "aiohttp[speedups]>=3.11.7",
 ]
 
 [project.urls]

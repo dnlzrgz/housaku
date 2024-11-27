@@ -27,7 +27,7 @@ Housaku is a personal search engine built on top of SQLite's FTS5 that lets you 
 - Relevant results powered by the BM25 algorithm.
 - Automatically updates files that had been modified since the last indexing session.
 
-> Support for additional file formats, such as ODT, is coming soon.
+> I will try adding support for additional file formats like ODT. I'm also exploring the possibility of indexing posts from your Bluesky feeds and Mastodon.
 
 ## Technologies used
 
@@ -52,7 +52,7 @@ That is why I decided to build Housaku. I wanted an easy-to-use and easy-to-main
 The recommended way of installing Housaku is by using [uv](https://github.com/astral-sh/uv):
 
 ```bash
-uv tool install housaku
+uv tool install --python 3.13 housaku
 ```
 
 Now you just need to run:

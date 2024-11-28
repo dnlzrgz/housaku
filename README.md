@@ -169,7 +169,23 @@ After you have configured the list of directories containing the documents you w
 housaku index
 ```
 
-> Note that you don't need to specify both files and feeds to start indexing.
+### Filtering content
+
+To index only your files, use the following command:
+
+```bash
+housaku index --include files
+```
+
+To index only your feeds:
+
+```bash
+housaku index --include feeds
+```
+
+> You can specify both options to index files and feeds together, but this is equivalent to simply running the `index` command without any options.
+
+### Parallelism
 
 You can also change the number of threads being used when indexing your files and documents:
 

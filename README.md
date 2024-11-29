@@ -169,7 +169,7 @@ After you have configured the list of directories containing the documents you w
 housaku index
 ```
 
-### Filtering content
+#### Filtering content
 
 To index only your files, use the following command:
 
@@ -185,7 +185,7 @@ housaku index --include feeds
 
 > You can specify both options to index files and feeds together, but this is equivalent to simply running the `index` command without any options.
 
-### Parallelism
+#### Parallelism
 
 You can also change the number of threads being used when indexing your files and documents:
 
@@ -234,6 +234,8 @@ Housaku also has a very simple Web UI that you can access by running:
 ```bash
 housaku web
 ```
+
+![Screenshot of the Web](./.github/screenshot_web.png)
 
 > The default port is `4242`.
 

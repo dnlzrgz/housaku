@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Annotated
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from starlette.applications import Starlette
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
+from starlette.responses import HTMLResponse, JSONResponse
 from housaku.db import init_db
 from housaku.settings import Settings
 from housaku.search import search
@@ -10,26 +10,34 @@ from housaku.search import search
 settings = Settings()
 init_db(settings.sqlite_url)
 
-app = FastAPI()
-
 base_dir = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=base_dir / "templates")
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html", context={})
+async def homepage(_):
+    index_page = base_dir / "index.html"
+    return HTMLResponse(index_page.open().read())
 
 
-@app.post("/search/", response_class=HTMLResponse)
-async def search_results(request: Request, query: Annotated[str, Form()]):
+async def search_results(request):
+    data = await request.json()
+    query = data["query"]
     try:
-        results = search(settings.sqlite_url, query)
+        results = search(settings.sqlite_url, query, 100)
+        return JSONResponse(
+            {
+                "query": query,
+                "results": results,
+            }
+        )
     except Exception as e:
         return 404, {"detail": f"{e}"}
 
-    return templates.TemplateResponse(
-        request=request,
-        name="results.html",
-        context={"query": query, "results": results},
-    )
+
+routes = [
+    Route("/", homepage, methods=["GET"]),
+    Route("/search", search_results, methods=["POST"]),
+    Mount("/static", app=StaticFiles(directory=base_dir / "static"), name="static"),
+]
+
+
+app = Starlette(routes=routes)

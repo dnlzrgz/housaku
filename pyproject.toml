@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "v0.7.7"
+version = "v0.7.9"
 description = "A personal search engine built on top of SQLite's FTS5."
 readme = "README.md"
 license = "MIT"
@@ -13,10 +13,12 @@ dependencies = [
   "selectolax>=0.3.21",
   "rich-click>=1.8.3",
   "pymupdf>=1.24.10",
-  "fastapi[standard]>=0.115.0",
   "python-multipart>=0.0.12",
   "textual>=0.82.0",
   "aiohttp[speedups]>=3.11.7",
+  "uvicorn>=0.32.1",
+  "starlette>=0.41.3",
+  "aiofiles>=24.1.0",
 ]
 
 [project.urls]

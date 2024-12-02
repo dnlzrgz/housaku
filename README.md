@@ -1,51 +1,43 @@
 # Housaku (豊作 「ほうさく」)
 
-Housaku is a personal search engine built on top of SQLite's FTS5 that lets you search your documents and favorite feeds in one place.
+Housaku is a personal search engine built on top of SQLite's FTS5 that lets you query your documents, books, PDFs, favorite feeds and more all in one place.
 
 ![Screenshot of the TUI](./.github/screenshot_tui.png)
 
-> Housaku is currently in early development, so you can expect some incompatible changes and other minor issues when updating. Once version `v1.0.0` is reached, my goal is to focus on stability and avoiding breaking changes.
+> Housaku is in early development, so you can expect some incompatible changes and other minor issues when updating. Once version `v1.0.0` is reached, my goal is to focus on stability and avoiding breaking changes as much as possible.
 
 ## Features
 
-- Support for the following file formats:
-  - Plain text files.
-  - Markdown.
-  - CSV.
-  - PDF.
-  - EPUB.
-  - DOCX.
-  - XLSX.
-  - PPTX.
+- Support for multiple file formats like `.txt`, `.md`, `.csv`, `.pdf`, `.epub`, `.docx`, `.xlsx` and `.pptx`.
 - Support for RSS/Atom feeds parsing and indexing.
 - Parallel file processing.
 - Concurrent feed processing.
 - Web UI.
-- Modern TUI.
+- Modern TUI with support for theming.
 - Easy-to-use CLI.
-- Theming (only for the TUI).
 - Relevant results powered by the BM25 algorithm.
-- Automatically updates files that had been modified since the last indexing session.
+- Support for incremental updates.
 
-> I will try adding support for additional file formats like ODT. I'm also exploring the possibility of indexing posts from your Bluesky feeds and Mastodon.
+> Support for file formats like `.odt` is coming as well as the possibility of indexing posts from Bluesky feeds and Mastodon.
 
-## Technologies used
+## Stack
 
+- [SQLite's FTS5 extension](https://sqlite.org/fts5.html).
+- [SQLite](https://www.sqlite.org/index.html).
+- [Starlette](https://www.starlette.io).
 - [aiohttp](https://docs.aiohttp.org/en/stable/index.html).
 - [click](https://click.palletsprojects.com/en/stable/).
-- [FastAPI](https://fastapi.tiangolo.com).
 - [feedparser](https://feedparser.readthedocs.io/en/latest/).
 - [pydantic](https://docs.pydantic.dev/latest/).
 - [pymupdf](https://pymupdf.readthedocs.io/en/latest/)
 - [rich](https://rich.readthedocs.io/en/stable/introduction.html).
-- [SQLite](https://www.sqlite.org/index.html).
-- [SQLite's FTS5 extension](https://sqlite.org/fts5.html).
 - [textual](https://www.textualize.io).
 
-## Why
+## Motivation
 
-Every time I need to search for something, I find myself feeling a bit frustrated with the experience. Web search results have become increasingly inconsistent, and I often spend more time looking for what I truly want or need than I did before. Searching my personal files is also not a great experience. While programs like Obsidian, which I use for the majority of my personal notes, are somewhat better, the experience is still slower, and the results rely on a simple pattern matching. Additionally, searching for a specific piece of content in documents outside my vault, such as my university notes, PDFs, presentations, or my personal library of books, becomes nearly impossible.
-That is why I decided to build Housaku. I wanted an easy-to-use and easy-to-maintain program that would allow me to search all my documents and favorite feeds from a single location without having to worry about format or location. I also wanted my results to be relevant to my search queries, not just based on basic pattern matching or a regular expression.
+The first reason I decided to start working on Housaku was to learn more about the basics of full-text search and how search engines operate under the hood. In fact, if you look at the commit history, you can see that initially, all the parsing, tokenization and TF/IDF calculations were handled "manually" before I opted to use SQLite's FTS5 solution due to performance.
+
+The second and final reason was the large volume of documents I was managing. I have ~5,000 notes in Obsidian, formatted in Markdown, a couple of hundred books in my Calibre library, mainly in `.epub`, a significant number of PDFs, and PowerPoint presentations from my computer science degree at UNED. Additionally, I also have a vast collection of RSS feeds that I have subscribed to for a long time. So, I wanted/needed an efficient and easy way to search through all of this documents without having to worry about the specifics of where each of them was located or in what format.
 
 ## Installation
 
@@ -55,7 +47,7 @@ The recommended way of installing Housaku is by using [uv](https://github.com/as
 uv tool install --python 3.13 housaku
 ```
 
-Now you just need to run:
+Now, you just run:
 
 ```bash
 housaku --help
@@ -78,6 +70,8 @@ To install Housaku using `pipx`, simply run:
 ```bash
 pipx install housaku
 ```
+
+> Just remember that the minimal version of Python required is `>=3.13`.
 
 ### Via `pip`
 
@@ -148,7 +142,7 @@ You can also learn more about what a specific command does by running:
 ```bash
 housaku [command] --help
 
-# Like for example
+# For example:
 
 housaku index --help
 ```
@@ -193,9 +187,9 @@ You can also change the number of threads being used when indexing your files an
 housaku index -t 8
 ```
 
-> I recommend to stick with the default number of threads.
+> My recommendation is to stick with the default number of threads.
 
-At the moment, indexing files is done in parallel, which makes the process faster but also introduces some complications. For example, canceling the indexing process is not recommended at the moment. My advice is to index small folders if you want to test the tool, or simply allow the indexing process to finish. In my case, I have about 7,000 documents, including markdown files, PDF, and EPUB files, as well as a large list of approximately 150 feeds. The entire process takes about 10 to 15 minutes.
+At the moment, indexing files is done in parallel using multi-threading, which makes the process faster but also introduces some complications. For example, cancelling the indexing half-way using `ctrl+c` will cause some threads to exit while others will continue running in the background and then fail.
 
 ### Search
 
@@ -239,7 +233,7 @@ housaku web
 
 > The default port is `4242`.
 
-This searching method have some limitations. For example, you can't open results that link to your personal files. In the future, I will try to solve this limitations, but for now please keep this in mind.
+This searching method have some limitations. For example, you can't open results that link to your local documents.
 
 ### `vacuum` and `purge`
 

@@ -47,7 +47,7 @@ async def index_feed(sqlite_url: str, feeds: list[str]) -> None:
                     result = cursor.fetchone()
 
                     if result:
-                        console.print(f"[yellow][Skip][/] already indexed '{uri}'.")
+                        console.print(f'[yellow][Skip][/] already indexed "{uri}".')
                         return
 
                     body = await fetch_post(client, entry_link)

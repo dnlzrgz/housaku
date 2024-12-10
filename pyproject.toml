@@ -1,6 +1,6 @@
 [project]
 name = "housaku"
-version = "v0.7.11"
+version = "v0.7.12"
 description = "A personal search engine built on top of SQLite's FTS5."
 authors = [{ name = "dnlzrgz", email = "contact@dnlzrgz.com" }]
 readme = "README.md"
